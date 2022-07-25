@@ -9,7 +9,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="BigSausage.token" />
+    <None Remove="BigSausageDEBUG.token" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Discord.Net" Version="3.7.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="BigSausage.token" />
+    <Resource Include="BigSausageDEBUG.token" />
   </ItemGroup>
 
   <ItemGroup>

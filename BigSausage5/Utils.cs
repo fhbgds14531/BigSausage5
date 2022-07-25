@@ -22,14 +22,5 @@ namespace BigSausage {
 			Discord.MessageReference message = new Discord.MessageReference(context.Message.Id, context.Channel.Id, context.Guild.Id);
 			await context.Channel.SendMessageAsync(reply, false, null, null, null, message, null, null, null);
 		}
-
-		public static Task FailedTask {
-			get {
-				throw null;
-			}
-		}
-
 	}
-
-	
 }

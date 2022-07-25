@@ -16,5 +16,13 @@ namespace BigSausage.Commands.CommandTypes {
 			await BigSausage.TimeToClose();
 		}
 
+		[Command("update")]
+		[RequireOwner]
+		[Summary("Updates the bot to the latest version.")]
+		public Task Update() {
+
+			return Task.CompletedTask;
+		}
+
 	}
 }
