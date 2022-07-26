@@ -1,18 +1,21 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using System.Diagnostics;
 
 namespace BigSausage {
 
 	public class BigSausage {
 
 		private static readonly string TOKEN = "BigSausageDEBUG.token";
+		private static Process _process;
 		private static DiscordSocketClient _client;
 		private static CommandHandler _commandHandler;
 		private static Localization? _localizationManager;
 		private static TaskCompletionSource<bool> _shutdownTask;
 
 		public BigSausage() {
+			
 			DiscordSocketConfig discordSocketConfig = new DiscordSocketConfig() {
 				GatewayIntents = GatewayIntents.AllUnprivileged
 			};
@@ -38,17 +41,21 @@ namespace BigSausage {
 
 
 		public async Task MainAsync() {
+			_process = Process.GetCurrentProcess();
 			if (_client != null) {
 				
 				await _client.LoginAsync(TokenType.Bot, File.ReadAllText(Utils.GetProcessPathDir() + "\\Files\\Tokens\\" + TOKEN));
 				await _commandHandler.SetupAsync();
 				await _client.StartAsync();
 
-
 				await _shutdownTask.Task;
 				await Shutdown();
 			}
 
+		}
+
+		public static Process GetBotMainProcess() {
+			return _process;
 		}
 
 		public static Task TimeToClose() {

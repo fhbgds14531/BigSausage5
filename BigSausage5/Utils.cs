@@ -14,7 +14,7 @@ namespace BigSausage {
 			} else {
 				Logging.Log("Failed to get ProcessPath! Defaulting to Desktop.", Discord.LogSeverity.Error);
 				Logging.LogErrorToFile(null, null, "Failed to get ProcessPath!");
-				return Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "\\BigSausage fallback directory";
+				return Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "\\BigSausage Fallback Directory";
 			}
 		}
 
