@@ -37,16 +37,16 @@ namespace BigSausage {
 
 			if ((!message.HasStringPrefix(prefix, ref argPos, StringComparison.OrdinalIgnoreCase) || message.Author.IsBot)) return;
 
-			Logging.Log("Recieved a command! \"" + message.Content + "\"", Discord.LogSeverity.Verbose);
-			Logging.Log("==============================================================================================", Discord.LogSeverity.Verbose);
-			Logging.Log("There are currently " + _commands.Modules.Count() + " command modules.", Discord.LogSeverity.Verbose);
+			Logging.Log("Recieved a command! \"" + message.Content + "\"", Discord.LogSeverity.Debug);
+			Logging.Log("==============================================================================================", Discord.LogSeverity.Debug);
+			Logging.Log("There are currently " + _commands.Modules.Count() + " command modules.", Discord.LogSeverity.Debug);
 			foreach (var module in _commands.Modules) {
-				Logging.Log("\tModule " + module.Name + ":", Discord.LogSeverity.Verbose);
+				Logging.Log("\tModule " + module.Name + ":", Discord.LogSeverity.Debug);
 				foreach (var command in module.Commands) {
-					Logging.Log("\t\t" + command.Name, Discord.LogSeverity.Verbose);
+					Logging.Log("\t\t" + command.Name, Discord.LogSeverity.Debug);
 				}
 			}
-			Logging.Log("==============================================================================================", Discord.LogSeverity.Verbose);
+			Logging.Log("==============================================================================================", Discord.LogSeverity.Debug);
 
 			var context = new SocketCommandContext(_client, message);
 			await _commands.ExecuteAsync(context, argPos, null, MultiMatchHandling.Best);

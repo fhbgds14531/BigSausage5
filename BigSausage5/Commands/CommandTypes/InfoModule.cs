@@ -11,10 +11,9 @@ namespace BigSausage.Commands.CommandTypes {
 
 		[Command("say")]
 		[Summary("Echoes a message")]
-		public async Task SayAsync([Remainder][Summary("The text to echo")] string echo = "test") {
+		public async Task SayAsync([Remainder] string echo = "test") {
 			Logging.Log("Echoing message! \"" + echo + "\"", Discord.LogSeverity.Verbose);
-			Discord.MessageReference message = new Discord.MessageReference(Context.Message.Id, Context.Channel.Id, Context.Guild.Id);
-			await ReplyAsync(echo, false, null, null, null, message, null, null, null);
+			await Utils.ReplyToMessageFromCommand(Context, echo);
 		}
 
 		[Command("help")]
@@ -23,18 +22,15 @@ namespace BigSausage.Commands.CommandTypes {
 			Logging.Log("Executing help command...", Discord.LogSeverity.Verbose);
 			Localization? localization = BigSausage.GetLocalizationManager(BigSausage.GetClient());
 			if (localization == null) {
-				Discord.MessageReference message = new Discord.MessageReference(Context.Message.Id, Context.Channel.Id, Context.Guild.Id);
-
-				await ReplyAsync("help_command_" + commandName, false, null, null, null, message, null, null, null);
+				await Utils.ReplyToMessageFromCommand(Context, "command_help_" + commandName);
 			} else {
 				Logging.Log("Sending help info!", Discord.LogSeverity.Verbose);
 				string localized = localization.GetLocalizedString(this.Context.Guild, "command_help_" + commandName.ToLower());
 				if(localized.Equals("command_help_" + commandName)) {
 					localized = "Sorry, the command you are requesting help with (\"" + commandName + "\") doesn't have an entry in the language file.";
 				}
-				Discord.MessageReference message = new Discord.MessageReference(Context.Message.Id, Context.Channel.Id, Context.Guild.Id);
 
-				await ReplyAsync(localized, false, null, null, null, message, null, null, null);
+				await Utils.ReplyToMessageFromCommand(Context, localized);
 			}
 		}
 

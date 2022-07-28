@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using BigSausage.Commands;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using System.Diagnostics;
@@ -15,9 +16,9 @@ namespace BigSausage {
 		private static TaskCompletionSource<bool> _shutdownTask;
 
 		public BigSausage() {
-			
+
 			DiscordSocketConfig discordSocketConfig = new DiscordSocketConfig() {
-				GatewayIntents = GatewayIntents.AllUnprivileged
+				GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers
 			};
 
 
@@ -67,6 +68,7 @@ namespace BigSausage {
 			await _client.LogoutAsync();
 			Logging.Log("Logged out of discord.", LogSeverity.Info);
 			Logging.Log("Shutting Down...", LogSeverity.Info);
+			Permissions.Permissions.Save();
 			await _client.StopAsync();
 		}
 
@@ -100,6 +102,9 @@ namespace BigSausage {
 					contents = new string[]{ "en_US" };
 					File.WriteAllText(guildFilePath + "\\selected_locale.bs", contents[0]);
 				}
+
+				Logging.Log("Asserting permissions initialization...", LogSeverity.Verbose);
+				Permissions.Permissions.InitPermissionsForGuild(guild);
 			}
 			return Task.CompletedTask;
 		}

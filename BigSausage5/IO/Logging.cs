@@ -8,7 +8,7 @@ using Discord;
 namespace BigSausage {
 	public class Logging {
 
-		private static LogSeverity severityThreshold = LogSeverity.Debug;
+		private static LogSeverity severityThreshold = LogSeverity.Verbose;
 		private static string LogFileName = DateTime.Now.ToString().Replace("/", ".").Replace(":", ".") + " Log.txt";
 		private static string LogPath = Utils.GetProcessPathDir() + "\\Files\\Logging";
 
@@ -26,6 +26,14 @@ namespace BigSausage {
 			LogSeverity severity = msg.Severity;
 			switch (severity) {
 				default:
+					case LogSeverity.Debug:
+					if (severityThreshold >= LogSeverity.Debug) {
+						Console.ForegroundColor = ConsoleColor.Gray;
+						message = "[Debug]    " + message;
+						break;
+					} else {
+						return Task.CompletedTask;
+					}
 				case LogSeverity.Verbose:
 					if (severityThreshold >= LogSeverity.Verbose) {
 						Console.ForegroundColor = ConsoleColor.Gray;

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Xml.Serialization;
 using System.Data;
 using System.Xml;
+using BigSausage.Commands;
 
 namespace BigSausage.IO {
 	internal class IOUtilities {
@@ -83,48 +84,65 @@ namespace BigSausage.IO {
 			return locales;
 		}
 
-		public static void SavePermissionsToDisk(Dictionary<ulong, Dictionary<ulong, int>> permissions) {
+		public static void SaveLinkablesToDisk(IGuild guild, List<Linkable> linkables) {
+			string linkableDir = Utils.GetProcessPathDir() + "\\Files\\Guilds\\" + guild.Id + "\\Linkables\\";
+			if (AssertDirectoryExists(linkableDir)) {
+				XmlSerializer serializer = new XmlSerializer(typeof(Linkable));
+				foreach (Linkable linkable in linkables) {
+					TextWriter writer = new StreamWriter(linkableDir + linkable.Name + ".xml");
+					serializer.Serialize(writer, linkable);
+					writer.Close();
+				}
+			}
+		}
+
+		public static void SavePermissionsToDisk(SerializableDictionary<ulong, SerializableDictionary<ulong, int>> permissions) {
 			if (IO.IOUtilities.AssertDirectoryExists(Utils.GetProcessPathDir() + "\\Files\\")) {
 				Logging.Log("Writing data to Permissions.xml...", LogSeverity.Verbose);
-				XmlSerializer serializer = new XmlSerializer(typeof(Dictionary<ulong, Dictionary<ulong, int>>));
+				XmlSerializer serializer = new XmlSerializer(typeof(SerializableDictionary<ulong, SerializableDictionary<ulong, int>>));
 				TextWriter writer = new StreamWriter(Utils.GetProcessPathDir() + "\\Files\\Permissions.xml");
 				serializer.Serialize(writer, permissions);
 				writer.Close();
 			}
 		}
 
-		public static Dictionary<ulong, Dictionary<ulong, int>> GetPermissionLevelsFromDisk() {
+		public static SerializableDictionary<ulong, SerializableDictionary<ulong, int>> GetPermissionLevelsFromDisk() {
 			if (IO.IOUtilities.AssertDirectoryExists(Utils.GetProcessPathDir() + "\\Files\\")) {
 				if (IO.IOUtilities.AssertFileExists(Utils.GetProcessPathDir() + "\\Files\\", "Permissions.xml")) {
-					XmlSerializer serializer = new XmlSerializer(typeof(Dictionary<ulong, Dictionary<ulong, int>>));
+					XmlSerializer serializer = new XmlSerializer(typeof(SerializableDictionary<ulong, SerializableDictionary<ulong, int>>));
 					TextReader reader = new StreamReader(Utils.GetProcessPathDir() + "\\Files\\Permissions.xml");
-					object? data = serializer.Deserialize(reader);
+					object? data = null;
+					try {
+						data = serializer.Deserialize(reader);
+					} catch (Exception ex) {
+						Logging.LogException(ex, "Error loading xml permissions!");
+					}
 					if(data != null) {
-						if (data is Dictionary<ulong, Dictionary<ulong, int>>) {
-							return (Dictionary<ulong, Dictionary<ulong, int>>)data;
+						if (data is SerializableDictionary<ulong, SerializableDictionary<ulong, int>>) {
+							return (SerializableDictionary<ulong, SerializableDictionary<ulong, int>>)data;
 						} else {
 							Logging.Log("Loaded permissions but the data is of the wrong type! Defaulting...", LogSeverity.Error);
 							Logging.LogErrorToFile(null, null, "Permissions file contained bad data.");
 
-							return new Dictionary<ulong, Dictionary<ulong, int>>();
+							return new SerializableDictionary<ulong, SerializableDictionary<ulong, int>>();
 						}
 					} else {
 						Logging.Log("Permissions.xml cannot be loaded! Defaulting...", LogSeverity.Error);
 						Logging.LogErrorToFile(null, null, "Permissions file loaded a null object.");
 
-						return new Dictionary<ulong, Dictionary<ulong, int>>();
+						return new SerializableDictionary<ulong, SerializableDictionary<ulong, int>>();
 					}
 				} else {
 					Logging.Log("Permissions file doesn't exist!", LogSeverity.Warning);
 					Logging.Log("Creating new permissions file...", LogSeverity.Warning);
-					Dictionary<ulong, Dictionary<ulong, int>> perms = new Dictionary<ulong, Dictionary<ulong, int>>();
+					SerializableDictionary<ulong, SerializableDictionary<ulong, int>> perms = new SerializableDictionary<ulong, SerializableDictionary<ulong, int>>();
 					SavePermissionsToDisk(perms);
 					Logging.Log("Done!", LogSeverity.Warning);
 					return perms;
 				}
 			} else {
 				Logging.Log("Somehow the files directory doesn't exist while trying to load permissions. Creating it now...", LogSeverity.Warning);
-				Dictionary<ulong, Dictionary<ulong, int>> perms = new Dictionary<ulong, Dictionary<ulong, int>>();
+				SerializableDictionary<ulong, SerializableDictionary<ulong, int>> perms = new SerializableDictionary<ulong, SerializableDictionary<ulong, int>>();
 				SavePermissionsToDisk(perms);
 				Logging.Log("Done!", LogSeverity.Warning);
 				return perms;

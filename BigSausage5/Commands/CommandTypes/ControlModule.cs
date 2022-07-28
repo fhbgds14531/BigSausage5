@@ -9,7 +9,7 @@ using Discord.Commands;
 namespace BigSausage.Commands.CommandTypes {
 	public class ControlModule : ModuleBase<SocketCommandContext>{
 
-		[Command("shutdown")]
+		[Command("sd")]
 		[Summary("Shuts down the bot")]
 		[RequireOwner]
 		public async Task Shutdown() {
@@ -34,11 +34,21 @@ namespace BigSausage.Commands.CommandTypes {
 			externalProcess.StartInfo.Arguments = args;
 			externalProcess.Start();
 			Logging.Log("Waiting for updater to initialize before exiting...", Discord.LogSeverity.Info);
-			while (!File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\BigSausage\\ReadyToUpdate.bs")) {
+			double seconds = 0.0;
+			while (!File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\BigSausage\\ReadyToUpdate.bs") && seconds < 60) {
 				await Task.Delay(500);
 				Logging.Log("Still waiting...", Discord.LogSeverity.Verbose);
+				seconds += 0.5;
 			}
-			await BigSausage.TimeToClose();
+			if (seconds >= 60) {
+				Logging.Log("Updater timed out. Killing process...", Discord.LogSeverity.Error);
+				externalProcess.Kill();
+				Logging.Log("Killed Updater process, returning to normal functionality...", Discord.LogSeverity.Error);
+				await Utils.ReplyToMessageFromCommand(Context, "Sorry, the updater process took too long and was aborted.");
+				return;
+			} else {
+				await BigSausage.TimeToClose();
+			}
 		}
 
 	}
