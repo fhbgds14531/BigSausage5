@@ -10,6 +10,7 @@ using System.Xml.Serialization;
 using System.Data;
 using System.Xml;
 using BigSausage.Commands;
+using Discord.WebSocket;
 
 namespace BigSausage.IO {
 	internal class IOUtilities {
@@ -84,18 +85,6 @@ namespace BigSausage.IO {
 			return locales;
 		}
 
-		public static void SaveLinkablesToDisk(IGuild guild, List<Linkable> linkables) {
-			string linkableDir = Utils.GetProcessPathDir() + "\\Files\\Guilds\\" + guild.Id + "\\Linkables\\";
-			if (AssertDirectoryExists(linkableDir)) {
-				XmlSerializer serializer = new XmlSerializer(typeof(Linkable));
-				foreach (Linkable linkable in linkables) {
-					TextWriter writer = new StreamWriter(linkableDir + linkable.Name + ".xml");
-					serializer.Serialize(writer, linkable);
-					writer.Close();
-				}
-			}
-		}
-
 		public static void SavePermissionsToDisk(SerializableDictionary<ulong, SerializableDictionary<ulong, int>> permissions) {
 			if (IO.IOUtilities.AssertDirectoryExists(Utils.GetProcessPathDir() + "\\Files\\")) {
 				Logging.Log("Writing data to Permissions.xml...", LogSeverity.Verbose);
@@ -149,9 +138,72 @@ namespace BigSausage.IO {
 			}
 		}
 
+		public static void SaveLinkablesToDisk(DiscordSocketClient client, SerializableDictionary<ulong, List<Linkable>> linkables) {
+			Logging.Log("Saving linkables to disk...", LogSeverity.Info);
+			foreach (IGuild guild in client.Guilds) {
+				Logging.Log("Processing guild \"" + guild.Name + "\" (" + guild.Id.ToString() + ")...", LogSeverity.Info);
+				string dir = Utils.GetProcessPathDir() + "Files\\Guilds\\" + guild.Id + "\\Linkables\\";
+				string[] files = Directory.GetFiles(dir);
+				XmlSerializer serializer = new XmlSerializer(typeof(Linkable));
+				foreach (Linkable linkable in linkables[guild.Id]) {
+					if (linkable.Filename != null) {
+						Logging.Log("Serializing " + linkable.Name + "...", LogSeverity.Debug);
+						TextWriter writer = new StreamWriter(linkable.Filename);
+						serializer.Serialize(writer, linkable);
+						writer.Close();
+					} else {
+						Logging.Log("Filename for linkable is null! Skipping...", LogSeverity.Debug);
+						continue;
+					}
+				}
+			}
+		}
+
+
+		public static SerializableDictionary<ulong, List<Linkable>> LoadLinkablesFromDisk(DiscordSocketClient client) {
+			SerializableDictionary<ulong, List<Linkable>> ret = new SerializableDictionary<ulong, List<Linkable>>();
+			foreach (IGuild guild in client.Guilds) {
+				string dir = Utils.GetProcessPathDir() + "Files\\Guilds\\" + guild.Id + "\\Linkables\\";
+				string[] files = Directory.GetFiles(dir);
+				XmlSerializer serializer = new XmlSerializer(typeof(Linkable));
+				List<Linkable> links = new List<Linkable>();
+				foreach (string file in files) {
+					if (file.EndsWith(".xml")) { }
+					TextReader reader = new StreamReader(file);
+					object? data = null;
+					try {
+						data = serializer.Deserialize(reader);
+					} catch (Exception ex) {
+						Logging.LogException(ex, "Tried to load Linkable and got bad data! " + file);
+					}
+					if(data != null) {
+						if (data is Linkable) {
+							links.Add((Linkable)data);
+						} else {
+							Logging.Log("Successfully deserialized linkable file but the loaded object is not a Linkable! \"" + file + "\"", LogSeverity.Error);
+						}
+					} else {
+						Logging.Log("Failed to load Linkable from file: " + file, LogSeverity.Error);
+					}
+					reader.Close();
+				}
+				ret.Add(guild.Id, links);
+			}
+			return ret;
+		}
+
+		public static void DownloadFile(string URL, string path) {
+			Logging.Log("Downloading \"" + path + "\" from " + URL, LogSeverity.Verbose);
+			HttpClient client = new HttpClient();
+			byte[] bytes = client.GetByteArrayAsync(URL).Result;
+			File.WriteAllBytes(path, bytes);
+			client.Dispose();
+			Logging.Log("Done!", LogSeverity.Verbose);
+		}
+
 		public static void AddTtsToGuild(IGuild guild, string tts) {
 			if(guild != null) {
-
+				throw NotImplementedException();
 			}
 		}
 	}

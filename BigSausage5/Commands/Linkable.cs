@@ -12,6 +12,8 @@ namespace BigSausage.Commands {
 
 		public string? Filename;
 
+		public string? Type;
+
 		public string? GuildID;
 
 		public string? Name;
@@ -20,11 +22,12 @@ namespace BigSausage.Commands {
 
 		private Linkable() { }
 
-		public Linkable(string name, string guildID, string filename, params string[] triggers) {
+		public Linkable(string name, string guildID, string filename, string type, params string[] triggers) {
 			this.Name = name;
 			this.GuildID = guildID;
 			this.Filename = filename;
 			this.Triggers = triggers;
+			this.Type = type;
 		}
 
 		public XmlSchema? GetSchema() {
@@ -47,6 +50,9 @@ namespace BigSausage.Commands {
 						reader.ReadEndElement();
 						reader.ReadStartElement("filename");
 							Filename = (string) stringSerializer.Deserialize(reader);
+						reader.ReadEndElement();
+						reader.ReadStartElement("type");
+							Type = (string) stringSerializer.Deserialize(reader);
 						reader.ReadEndElement();
 						reader.ReadStartElement("guildID");
 							GuildID = (string) stringSerializer.Deserialize(reader);
@@ -75,13 +81,18 @@ namespace BigSausage.Commands {
 					writer.WriteStartElement("filename");
 						stringSerializer.Serialize(writer, Filename);
 					writer.WriteEndElement();
+					writer.WriteStartElement("type");
+						stringSerializer.Serialize(writer, Type);
+					writer.WriteEndElement();
 					writer.WriteStartElement("guildID");
 						stringSerializer.Serialize(writer, GuildID);
 					writer.WriteEndElement();
 				writer.WriteEndElement();
 				writer.WriteStartElement("triggers");
-					foreach (string trigger in Triggers) {
-						stringSerializer.Serialize(writer, trigger);
+					if (Triggers != null) {
+						foreach (string trigger in Triggers) {
+							stringSerializer.Serialize(writer, trigger);
+						}
 					}
 				writer.WriteEndElement();
 			writer.WriteEndElement();

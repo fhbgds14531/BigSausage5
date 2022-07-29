@@ -25,6 +25,10 @@ namespace BigSausage {
 			Discord.MessageReference message = new Discord.MessageReference(context.Message.Id, context.Channel.Id, context.Guild.Id);
 			await context.Channel.SendMessageAsync(reply, false, null, null, null, message, null, null, null);
 		}
+
+		public static async Task SendNoPermissionReply(SocketCommandContext context) {
+			await ReplyToMessageFromCommand(context, "Sorry! You don't have permission to use that command! :(");
+		}
 	}
 
 	

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
 
 namespace BigSausage.Permissions {
@@ -99,6 +100,10 @@ namespace BigSausage.Permissions {
 				Initialize();
 			}
 			return (EnumPermissionLevel) _loadedPermissions[guild.Id][user.Id];
+		}
+
+		public static bool UserMeetsPermissionRequirements(SocketCommandContext commandContext, EnumPermissionLevel permissionLevel) {
+			return UserMeetsPermissionRequirements(commandContext.Guild, commandContext.User, permissionLevel);
 		}
 
 		public static bool UserMeetsPermissionRequirements(IGuild guild, IUser user, EnumPermissionLevel permissionLevel) {
