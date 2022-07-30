@@ -24,7 +24,7 @@ namespace BigSausage {
 
 			_client = new DiscordSocketClient(discordSocketConfig);
 			_client.Log += Logging.Log;
-			_client.Ready += SetupGuilds;
+			_client.Ready += BotReady;
 
 
 			CommandServiceConfig config = new CommandServiceConfig();
@@ -35,6 +35,9 @@ namespace BigSausage {
 			CommandService commandService = new CommandService(config);
 
 			_commandHandler = new CommandHandler(_client, commandService);
+
+			_client.SlashCommandExecuted += _commandHandler.HandleSlashCommandsAsync;
+
 			_shutdownTask = new TaskCompletionSource<bool>();
 		}
 
@@ -72,7 +75,8 @@ namespace BigSausage {
 			await _client.StopAsync();
 		}
 
-		private Task SetupGuilds() {
+		private async Task BotReady() {
+			await _commandHandler.InitGlobalSlashCommands(_client);
 			foreach (IGuild guild in _client.Guilds) {
 				ulong guildId = guild.Id;
 				string guildName = guild.Name;
@@ -106,7 +110,7 @@ namespace BigSausage {
 				Logging.Log("Asserting permissions initialization...", LogSeverity.Verbose);
 				Permissions.Permissions.InitPermissionsForGuild(guild);
 			}
-			return Task.CompletedTask;
+			return;
 		}
 
 		public static Localization GetLocalizationManager(DiscordSocketClient client) {

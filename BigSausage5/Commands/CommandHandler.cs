@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using BigSausage.Commands;
 using System.Reflection;
+using Discord;
+using Discord.Net;
 
 namespace BigSausage {
 	public class CommandHandler {
@@ -21,6 +23,39 @@ namespace BigSausage {
 			_commands = commands;
 		}
 
+		public async Task InitGlobalSlashCommands(DiscordSocketClient client) {
+			Logging.Log("Initializing global slash commands...", LogSeverity.Verbose);
+			var globalUploadCommand = new SlashCommandBuilder();
+			var globalHelpCommand = new SlashCommandBuilder();
+			var globalTTSCommand = new SlashCommandBuilder();
+			var l10n = BigSausage.GetLocalizationManager(client);
+
+			Logging.Log("Initializing bs-upload...", LogSeverity.Debug);
+			globalUploadCommand.WithName("bs-upload");
+			globalUploadCommand.WithDescription(l10n.GetLocalizedString("en_US", "command_upload_description"));
+			globalUploadCommand.WithDefaultMemberPermissions(GuildPermission.MentionEveryone);
+
+			Logging.Log("Initializing bs-help...", LogSeverity.Debug);
+			globalHelpCommand.WithName("bs-help");
+			globalHelpCommand.WithDescription(l10n.GetLocalizedString("en_US", "command_help_general"));
+			globalHelpCommand.WithDefaultMemberPermissions(GuildPermission.SendMessages);
+
+			Logging.Log("Initializing bs-tts...", LogSeverity.Debug);
+			globalTTSCommand.WithName("bs-tts");
+			globalTTSCommand.WithDescription(l10n.GetLocalizedString("en_US", "command_TTS_description"));
+			globalTTSCommand.WithDefaultMemberPermissions(GuildPermission.SendTTSMessages);
+
+			try {
+				Logging.Log("Injecting commands...", LogSeverity.Debug);
+				await client.CreateGlobalApplicationCommandAsync(globalUploadCommand.Build());
+				await client.CreateGlobalApplicationCommandAsync(globalHelpCommand.Build());
+			}catch (HttpException ex) {
+				Logging.LogException(ex, "Error processing slash command!");
+
+			}
+			return;
+		}
+
 		public async Task SetupAsync() {
 			Logging.Log("Setting up CommandHandler...", Discord.LogSeverity.Info);
 			_client.MessageReceived += HandleCommandsAsync;
@@ -28,6 +63,10 @@ namespace BigSausage {
 			_commands.AddTypeReader(typeof(bool), new BooleanTypeReader());
 
 			await _commands.AddModulesAsync(assembly: Assembly.GetEntryAssembly(), services: null);
+		}
+
+		public async Task HandleSlashCommandsAsync(SocketSlashCommand command) {
+			await command.RespondAsync(SlashCommandManager.HandleSlashCommand(command));
 		}
 
 		public async Task HandleCommandsAsync(SocketMessage messageParam) {

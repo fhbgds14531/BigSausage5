@@ -83,9 +83,9 @@ namespace BigSausage {
 
 		public static void LogException(Exception e, string description) {
 			LogErrorToFile(null, null, description + " (" + e.GetType().FullName + ")");
+			Log(description, LogSeverity.Critical);
 			Log("Exception " + e.GetType().FullName + " occured!", LogSeverity.Critical);
 			Log(e.Message, LogSeverity.Critical);
-			Log(description, LogSeverity.Critical);
 			if (e.TargetSite != null) {
 				Log("Occured at " + e.TargetSite.Name + " in " + e.TargetSite.Module.FullyQualifiedName, LogSeverity.Critical);
 			}

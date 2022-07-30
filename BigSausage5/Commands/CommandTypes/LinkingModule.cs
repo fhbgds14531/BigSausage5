@@ -11,8 +11,18 @@ using System.Threading.Tasks;
 namespace BigSausage.Commands.CommandTypes {
 	internal class LinkingModule : ModuleBase<SocketCommandContext> {
 
+		[Command("image")]
+		public async Task Image([Remainder] params string[] args) {
+			await Task.CompletedTask;
+		}
+
+		[Command("voice")]
+		public async Task Voice([Remainder] params string[] args) {
+			await Task.CompletedTask;
+		}
+
 		[Command("upload")]
-		public async Task Upload(string name, [Remainder] params string[] triggers) {
+		public async Task Upload([Remainder] params string[] triggers) {
 			if(Permissions.Permissions.UserMeetsPermissionRequirements(Context, Permissions.EnumPermissionLevel.High)) {
 				Attachment[] attachments = Context.Message.Attachments.ToArray();
 				foreach (Attachment attachment in attachments) {
@@ -32,16 +42,19 @@ namespace BigSausage.Commands.CommandTypes {
 								continue;
 							}
 							lType = "audio";
-							Regex audio = new Regex("");
-							if (audio.IsMatch(type.Substring(type.LastIndexOf("/"), type.Length - 1))) {
+							if (type.EndsWith("wav")) {
 								guildID = Context.Guild.Id.ToString();
 								filename = Utils.GetProcessPathDir() + "\\Files\\Guilds\\" + guildID + "\\Linkables\\Audio\\" + attachment.Filename;
-								lName = attachment.Filename.Substring(0, attachment.Filename.LastIndexOf("."));
+								lName = attachment.Filename.Substring(0, attachment.Filename.LastIndexOf(".")); 
+								if (!triggers.Contains(lName)) triggers.Append(lName);
 								Logging.Log("Audio upload request from guild \"" + Context.Guild.Name + "\" (" + guildID + ") accepted! Downloading " +
 									attachment.Filename + " to disk...", LogSeverity.Info);
 								IO.IOUtilities.DownloadFile(attachment.Url, filename);
 								Linkable lkb = new Linkable(lName, guildID, filename, lType, triggers);
 								Linkables.AddLinkableToGuild(Context.Guild, lkb);
+							} else {
+								await Utils.ReplyToMessageFromCommand(Context, "Sorry, BigSausage only supports .wav files for audio linking.");
+								continue;
 							}
 						} else if (type.StartsWith("image")) {
 							lType = "image";
@@ -50,6 +63,7 @@ namespace BigSausage.Commands.CommandTypes {
 								guildID = Context.Guild.Id.ToString();
 								filename = Utils.GetProcessPathDir() + "\\Files\\Guilds\\" + guildID + "\\Linkables\\Images\\" + attachment.Filename;
 								lName = attachment.Filename.Substring(0, attachment.Filename.LastIndexOf("."));
+								if (!triggers.Contains(lName)) triggers.Append(lName);
 								Logging.Log("Image upload request from guild \"" + Context.Guild.Name + "\" (" + guildID + ") accepted! Downloading " + 
 									attachment.Filename + " to disk...", LogSeverity.Info);
 								IO.IOUtilities.DownloadFile(attachment.Url, filename);

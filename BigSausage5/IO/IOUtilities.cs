@@ -203,7 +203,7 @@ namespace BigSausage.IO {
 
 		public static void AddTtsToGuild(IGuild guild, string tts) {
 			if(guild != null) {
-				throw NotImplementedException();
+				Logging.Log($"Attempting to add TTS \"{tts}\" to guild \"{guild.Name}\" ({guild.Id})", LogSeverity.Debug);
 			}
 		}
 	}
