@@ -9,15 +9,15 @@ namespace BigSausage {
 	public class BigSausage {
 
 		private static readonly string TOKEN = "BigSausageDEBUG.token";
-		private static Process _process;
-		private static DiscordSocketClient _client;
-		private static CommandHandler _commandHandler;
+		private static Process? _process;
+		private static DiscordSocketClient? _client;
+		private static CommandHandler? _commandHandler;
 		private static Localization? _localizationManager;
-		private static TaskCompletionSource<bool> _shutdownTask;
+		private static TaskCompletionSource<bool>? _shutdownTask;
 
 		public BigSausage() {
-
-			DiscordSocketConfig discordSocketConfig = new DiscordSocketConfig() {
+			_process = Process.GetCurrentProcess();
+			DiscordSocketConfig discordSocketConfig = new() {
 				GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers
 			};
 
@@ -27,12 +27,12 @@ namespace BigSausage {
 			_client.Ready += BotReady;
 
 
-			CommandServiceConfig config = new CommandServiceConfig();
+			CommandServiceConfig config = new();
 			config.SeparatorChar = ' ';
 			config.CaseSensitiveCommands = false;
 			config.IgnoreExtraArgs = true;
 
-			CommandService commandService = new CommandService(config);
+			CommandService commandService = new(config);
 
 			_commandHandler = new CommandHandler(_client, commandService);
 
@@ -41,7 +41,7 @@ namespace BigSausage {
 			_shutdownTask = new TaskCompletionSource<bool>();
 		}
 
-		public static Task Main(string[] args) => new BigSausage().MainAsync();
+		public static Task Main() => new BigSausage().MainAsync();
 
 
 		public async Task MainAsync() {
@@ -49,34 +49,35 @@ namespace BigSausage {
 			if (_client != null) {
 				
 				await _client.LoginAsync(TokenType.Bot, File.ReadAllText(Utils.GetProcessPathDir() + "\\Files\\Tokens\\" + TOKEN));
-				await _commandHandler.SetupAsync();
+				if(_commandHandler != null) await _commandHandler.SetupAsync();
 				await _client.StartAsync();
 
-				await _shutdownTask.Task;
+				if (_shutdownTask != null) await _shutdownTask.Task;
 				await Shutdown();
 			}
 
 		}
 
-		public static Process GetBotMainProcess() {
+		public static Process? GetBotMainProcess() {
 			return _process;
 		}
 
 		public static Task TimeToClose() {
-			_shutdownTask.SetResult(true);
+			if(_shutdownTask != null) _shutdownTask.SetResult(true);
 			return Task.CompletedTask;
 		}
 
 		private async static Task Shutdown() {
-			await _client.LogoutAsync();
+			if(_client != null) await _client.LogoutAsync();
 			Logging.Log("Logged out of discord.", LogSeverity.Info);
 			Logging.Log("Shutting Down...", LogSeverity.Info);
 			Permissions.Permissions.Save();
-			await _client.StopAsync();
+			if(_client != null) await _client.StopAsync();
 		}
 
 		private async Task BotReady() {
-			await _commandHandler.InitGlobalSlashCommands(_client);
+			if(_commandHandler != null) await _commandHandler.InitGlobalSlashCommands(_client);
+			if(_client == null) return;
 			foreach (IGuild guild in _client.Guilds) {
 				ulong guildId = guild.Id;
 				string guildName = guild.Name;
@@ -126,7 +127,7 @@ namespace BigSausage {
 			return _localizationManager;
 		}
 
-		public static DiscordSocketClient GetClient() {
+		public static DiscordSocketClient? GetClient() {
 			return _client;
 		}
 

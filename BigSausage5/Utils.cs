@@ -22,7 +22,7 @@ namespace BigSausage {
 		}
 
 		public static async Task ReplyToMessageFromCommand(SocketCommandContext context, string reply) {
-			Discord.MessageReference message = new Discord.MessageReference(context.Message.Id, context.Channel.Id, context.Guild.Id);
+			Discord.MessageReference message = new(context.Message.Id, context.Channel.Id, context.Guild.Id);
 			await context.Channel.SendMessageAsync(reply, false, null, null, null, message, null, null, null);
 		}
 
@@ -34,7 +34,9 @@ namespace BigSausage {
 	
 
 	[XmlRoot("dictionary")]
+#pragma warning disable CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
 	public class SerializableDictionary<TKey, TValue>
+#pragma warning restore CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
 	: Dictionary<TKey, TValue>, IXmlSerializable {
 		public SerializableDictionary() { }
 		public SerializableDictionary(IDictionary<TKey, TValue> dictionary) : base(dictionary) { }
@@ -49,8 +51,8 @@ namespace BigSausage {
 		}
 
 		public void ReadXml(System.Xml.XmlReader reader) {
-			XmlSerializer keySerializer = new XmlSerializer(typeof(TKey));
-			XmlSerializer valueSerializer = new XmlSerializer(typeof(TValue));
+			XmlSerializer keySerializer = new(typeof(TKey));
+			XmlSerializer valueSerializer = new(typeof(TValue));
 
 			bool wasEmpty = reader.IsEmptyElement;
 			reader.Read();
@@ -82,8 +84,8 @@ namespace BigSausage {
 		}
 
 		public void WriteXml(System.Xml.XmlWriter writer) {
-			XmlSerializer keySerializer = new XmlSerializer(typeof(TKey));
-			XmlSerializer valueSerializer = new XmlSerializer(typeof(TValue));
+			XmlSerializer keySerializer = new(typeof(TKey));
+			XmlSerializer valueSerializer = new(typeof(TValue));
 
 			foreach (TKey key in this.Keys) {
 				writer.WriteStartElement("item");

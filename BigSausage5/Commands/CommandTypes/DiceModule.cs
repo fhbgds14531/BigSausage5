@@ -38,7 +38,7 @@ namespace BigSausage.Commands.CommandTypes {
 		private DiceRoll? GetRoll(string currentRoll) {
 			try {
 				Logging.Log($"Evaluating {currentRoll} for rolls...", Discord.LogSeverity.Debug);
-				Regex roll = new Regex("([+|-]*)(\\d+)d(\\d+)|([+|-])(\\d+)");
+				Regex roll = new("([+|-]*)(\\d+)d(\\d+)|([+|-])(\\d+)");
 				if (roll.IsMatch(currentRoll)) {
 					string newString = "";
 					Match m = roll.Match(currentRoll); int sign = 1;
@@ -47,13 +47,13 @@ namespace BigSausage.Commands.CommandTypes {
 						if (m.Groups[4] != null) if (m.Groups[4].Value == "-") sign = -1;
 						Logging.Log($"Group 5 is not null ({m.Groups[5]})! Treating this input as an int!", Discord.LogSeverity.Debug);
 						Logging.Log($"Parsed capture ({m.Groups[0].Value}) and found [Number = {m.Groups[5].Value}, Sign = {sign}]", Discord.LogSeverity.Debug);
-						newString = m.Captures[0].Length == currentRoll.Length ? "done" : currentRoll.Substring(m.Captures[0].Length);
+						newString = m.Captures[0].Length == currentRoll.Length ? "done" : currentRoll[m.Captures[0].Length..];
 						return new DiceRoll(int.Parse(m.Groups[5].Value), GetRoll(newString), sign);
 					}
 					int dice = int.Parse(m.Groups[2].Value);
 					int sides = int.Parse(m.Groups[3].Value);
 					Logging.Log($"Parsed capture ({m.Groups[0].Value}) and found [Dice = {dice}, Sides = {sides}, Sign = {sign}]", Discord.LogSeverity.Debug);
-					newString = m.Captures[0].Length == currentRoll.Length ? "done" : currentRoll.Substring(m.Captures[0].Length);
+					newString = m.Captures[0].Length == currentRoll.Length ? "done" : currentRoll[m.Captures[0].Length..];
 					Logging.Log($"Finished parsing group! New string is \"{newString}\"", Discord.LogSeverity.Debug);
 					return new DiceRoll(dice, sides, GetRoll(newString), sign);
 				} else {
@@ -67,10 +67,10 @@ namespace BigSausage.Commands.CommandTypes {
 		}
 
 		internal class DiceRoll {
-
-			int signMult;
-			int sides, dice;
-			DiceRoll? mod;
+			readonly int signMult;
+			readonly int sides;
+			readonly int dice;
+			readonly DiceRoll? mod;
 
 			int total;
 
@@ -114,7 +114,7 @@ namespace BigSausage.Commands.CommandTypes {
 
 			public DiceRoll Roll() {
 				if (mod != null && sides != -1) { // If this is null, treat this like an int.
-					Random random = new Random();
+					Random random = new();
 					Logging.Log($"Rolling {dice}d{sides}...", Discord.LogSeverity.Debug);
 					rolls = new List<string>();
 					int result = 0;
@@ -143,18 +143,6 @@ namespace BigSausage.Commands.CommandTypes {
 
 			public int GetIntTotal() {
 				return total;
-			}
-		}
-
-		internal class Die {
-			private int sides;
-
-			public Die(int sides) {
-				this.sides = sides;
-			}
-
-			public int Roll() {
-				return new Random().Next(sides) + 1;
 			}
 		}
 	}

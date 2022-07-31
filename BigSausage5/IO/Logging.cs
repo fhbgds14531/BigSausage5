@@ -8,9 +8,9 @@ using Discord;
 namespace BigSausage {
 	public class Logging {
 
-		private static LogSeverity severityThreshold = LogSeverity.Debug;
-		private static string LogFileName = DateTime.Now.ToString().Replace("/", ".").Replace(":", ".") + " Log.txt";
-		private static string LogPath = Utils.GetProcessPathDir() + "\\Files\\Logging";
+		private static readonly LogSeverity severityThreshold = LogSeverity.Debug;
+		private static readonly string LogFileName = DateTime.Now.ToString().Replace("/", ".").Replace(":", ".") + " Log.txt";
+		private static readonly string LogPath = Utils.GetProcessPathDir() + "\\Files\\Logging";
 
 		[Obsolete("Please use the version that includes severity.")]
 		public static void Log(string message) {
@@ -93,7 +93,7 @@ namespace BigSausage {
 
 		public async static Task<Task> LogErrorToFileAsync(IGuild? guild, IMessage? triggerMessage, string summary) {
 			Console.Out.WriteLine("Testing Logging...");
-			List<string> lines = new List<string>();
+			List<string> lines = new();
 
 			lines.Add("An error occured" + (guild == null ? "!" : " in guild \"" + guild.Name + "\" (" + guild.Id + ")"));
 			lines.Add("\t\"Trigger message: " + (triggerMessage == null ? "[NO_MESSAGE]" : triggerMessage.Content) + "\"");
@@ -122,14 +122,14 @@ namespace BigSausage {
 
 			byte[] buffer = Encoding.UTF8.GetBytes(outputString);
 
-			await errorFile.WriteAsync(buffer, 0, buffer.Length);
+			await errorFile.WriteAsync(buffer);
 			errorFile.Close();
 
 			return Task.CompletedTask;
 		}
 
 		public static void LogErrorToFile(IGuild? guild, IMessage? triggerMessage, string summary) {
-			List<string> lines = new List<string>();
+			List<string> lines = new();
 
 			lines.Add("An error occured" + (guild == null ? "!" : " in guild \"" + guild.Name + "\" (" + guild.Id + ")"));
 			lines.Add("\t\"Trigger message: " + (triggerMessage == null ? "[NO_MESSAGE]" : triggerMessage.Content) + "\"");

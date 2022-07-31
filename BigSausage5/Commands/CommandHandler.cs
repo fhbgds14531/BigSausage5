@@ -16,7 +16,7 @@ namespace BigSausage {
 		private readonly string prefix = "!bs ";
 		private readonly DiscordSocketClient _client;
 		private readonly CommandService _commands;
-		private List<SlashCommandBuilder> _slashCommandBuilders;
+		private readonly List<SlashCommandBuilder> _slashCommandBuilders;
 
 		public CommandHandler(DiscordSocketClient client, CommandService commands) {
 			Logging.Log("Initializing CommandHandler...", Discord.LogSeverity.Info);
@@ -25,34 +25,39 @@ namespace BigSausage {
 			_slashCommandBuilders = new List<SlashCommandBuilder>();
 		}
 
-		public async Task InitGlobalSlashCommands(DiscordSocketClient client) {
+		public async Task InitGlobalSlashCommands(DiscordSocketClient? client) {
 			Logging.Log("Initializing global slash commands...", LogSeverity.Verbose);
-			var l10n = BigSausage.GetLocalizationManager(client);
+			if (client != null) {
+				var l10n = BigSausage.GetLocalizationManager(client);
 
-			Logging.Log("Initializing bs-upload...", LogSeverity.Debug);
-			_slashCommandBuilders.Add(new SlashCommandBuilder().WithName("bs-upload")
-				.WithDescription(l10n.GetLocalizedString("en_US", "command_upload_description")).WithDefaultMemberPermissions(GuildPermission.MentionEveryone));
+				Logging.Log("Initializing bs-upload...", LogSeverity.Debug);
+				_slashCommandBuilders.Add(new SlashCommandBuilder().WithName("bs-upload")
+					.WithDescription(l10n.GetLocalizedString("en_US", "command_upload_description")).WithDefaultMemberPermissions(GuildPermission.MentionEveryone));
 
-			Logging.Log("Initializing bs-help...", LogSeverity.Debug);
-			_slashCommandBuilders.Add(new SlashCommandBuilder().WithName("bs-help").WithDescription(l10n.GetLocalizedString("en_US", "command_help_general"))
-				.WithDefaultMemberPermissions(GuildPermission.SendMessages));
+				Logging.Log("Initializing bs-help...", LogSeverity.Debug);
+				_slashCommandBuilders.Add(new SlashCommandBuilder().WithName("bs-help").WithDescription(l10n.GetLocalizedString("en_US", "command_help_general"))
+					.WithDefaultMemberPermissions(GuildPermission.SendMessages));
 
-			Logging.Log("Initializing bs-tts...", LogSeverity.Debug);
-			_slashCommandBuilders.Add(new SlashCommandBuilder().WithName("bs-tts").WithDescription(l10n.GetLocalizedString("en_US", "command_TTS_description"))
-				.WithDefaultMemberPermissions(GuildPermission.SendTTSMessages));
+				Logging.Log("Initializing bs-tts...", LogSeverity.Debug);
+				_slashCommandBuilders.Add(new SlashCommandBuilder().WithName("bs-tts").WithDescription(l10n.GetLocalizedString("en_US", "command_TTS_description"))
+					.WithDefaultMemberPermissions(GuildPermission.SendTTSMessages));
 
 
 
-			try {
-				Logging.Log("Injecting commands...", LogSeverity.Debug);
-				foreach (SlashCommandBuilder slashCommandBuilder in _slashCommandBuilders) {
-					Logging.Log($"Injecting {slashCommandBuilder.Name}...", LogSeverity.Debug);
-					await client.CreateGlobalApplicationCommandAsync(slashCommandBuilder.Build());
+				try {
+					Logging.Log("Injecting commands...", LogSeverity.Debug);
+					foreach (SlashCommandBuilder slashCommandBuilder in _slashCommandBuilders) {
+						Logging.Log($"Injecting {slashCommandBuilder.Name}...", LogSeverity.Debug);
+						await client.CreateGlobalApplicationCommandAsync(slashCommandBuilder.Build());
+					}
+				} catch (HttpException ex) {
+					Logging.LogException(ex, "Error processing slash command!");
 				}
-			}catch (HttpException ex) {
-				Logging.LogException(ex, "Error processing slash command!");
+				return;
+			} else {
+				Logging.Log("Client is null!", LogSeverity.Critical);
+				return;
 			}
-			return;
 		}
 
 		public async Task SetupAsync() {
@@ -69,8 +74,7 @@ namespace BigSausage {
 		}
 
 		public async Task HandleCommandsAsync(SocketMessage messageParam) {
-			var message = messageParam as SocketUserMessage;
-			if (message == null) return;
+			if (messageParam is not SocketUserMessage message) return;
 			int argPos = 0;
 
 			if ((!message.HasStringPrefix(prefix, ref argPos, StringComparison.OrdinalIgnoreCase) || message.Author.IsBot)) return;
@@ -78,7 +82,7 @@ namespace BigSausage {
 			Logging.Log("Recieved a command! \"" + message.Content + "\"", Discord.LogSeverity.Debug);
 
 			var context = new SocketCommandContext(_client, message);
-			await _commands.ExecuteAsync(context, argPos, null, MultiMatchHandling.Best);
+			await _commands.ExecuteAsync(context, argPos, null, MultiMatchHandling.Exception);
 			Logging.Log("Executed command!", Discord.LogSeverity.Debug);
 		}
 	}

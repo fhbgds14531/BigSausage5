@@ -12,16 +12,12 @@ namespace BigSausage.Commands {
 
 
 		public static string HandleSlashCommand(SocketSlashCommand command) {
-			switch (command.Data.Name) {
-				case "bs-tts":
-					return TTSCommand(command);
-				case "bs-upload":
-					return UploadCommand(command);
-				case "bs-help":
-					return HelpCommand(command);
-				default:
-					return "Unrecognized command!";
-			}
+			return command.Data.Name switch {
+				"bs-tts" => TTSCommand(command),
+				"bs-upload" => UploadCommand(command),
+				"bs-help" => HelpCommand(command),
+				_ => "Unrecognized command!",
+			};
 		}
 
 		private static string TTSCommand(SocketSlashCommand command) {
