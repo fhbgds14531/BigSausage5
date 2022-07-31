@@ -16,42 +16,41 @@ namespace BigSausage {
 		private readonly string prefix = "!bs ";
 		private readonly DiscordSocketClient _client;
 		private readonly CommandService _commands;
+		private List<SlashCommandBuilder> _slashCommandBuilders;
 
 		public CommandHandler(DiscordSocketClient client, CommandService commands) {
 			Logging.Log("Initializing CommandHandler...", Discord.LogSeverity.Info);
 			_client = client;
 			_commands = commands;
+			_slashCommandBuilders = new List<SlashCommandBuilder>();
 		}
 
 		public async Task InitGlobalSlashCommands(DiscordSocketClient client) {
 			Logging.Log("Initializing global slash commands...", LogSeverity.Verbose);
-			var globalUploadCommand = new SlashCommandBuilder();
-			var globalHelpCommand = new SlashCommandBuilder();
-			var globalTTSCommand = new SlashCommandBuilder();
 			var l10n = BigSausage.GetLocalizationManager(client);
 
 			Logging.Log("Initializing bs-upload...", LogSeverity.Debug);
-			globalUploadCommand.WithName("bs-upload");
-			globalUploadCommand.WithDescription(l10n.GetLocalizedString("en_US", "command_upload_description"));
-			globalUploadCommand.WithDefaultMemberPermissions(GuildPermission.MentionEveryone);
+			_slashCommandBuilders.Add(new SlashCommandBuilder().WithName("bs-upload")
+				.WithDescription(l10n.GetLocalizedString("en_US", "command_upload_description")).WithDefaultMemberPermissions(GuildPermission.MentionEveryone));
 
 			Logging.Log("Initializing bs-help...", LogSeverity.Debug);
-			globalHelpCommand.WithName("bs-help");
-			globalHelpCommand.WithDescription(l10n.GetLocalizedString("en_US", "command_help_general"));
-			globalHelpCommand.WithDefaultMemberPermissions(GuildPermission.SendMessages);
+			_slashCommandBuilders.Add(new SlashCommandBuilder().WithName("bs-help").WithDescription(l10n.GetLocalizedString("en_US", "command_help_general"))
+				.WithDefaultMemberPermissions(GuildPermission.SendMessages));
 
 			Logging.Log("Initializing bs-tts...", LogSeverity.Debug);
-			globalTTSCommand.WithName("bs-tts");
-			globalTTSCommand.WithDescription(l10n.GetLocalizedString("en_US", "command_TTS_description"));
-			globalTTSCommand.WithDefaultMemberPermissions(GuildPermission.SendTTSMessages);
+			_slashCommandBuilders.Add(new SlashCommandBuilder().WithName("bs-tts").WithDescription(l10n.GetLocalizedString("en_US", "command_TTS_description"))
+				.WithDefaultMemberPermissions(GuildPermission.SendTTSMessages));
+
+
 
 			try {
 				Logging.Log("Injecting commands...", LogSeverity.Debug);
-				await client.CreateGlobalApplicationCommandAsync(globalUploadCommand.Build());
-				await client.CreateGlobalApplicationCommandAsync(globalHelpCommand.Build());
+				foreach (SlashCommandBuilder slashCommandBuilder in _slashCommandBuilders) {
+					Logging.Log($"Injecting {slashCommandBuilder.Name}...", LogSeverity.Debug);
+					await client.CreateGlobalApplicationCommandAsync(slashCommandBuilder.Build());
+				}
 			}catch (HttpException ex) {
 				Logging.LogException(ex, "Error processing slash command!");
-
 			}
 			return;
 		}
@@ -77,19 +76,10 @@ namespace BigSausage {
 			if ((!message.HasStringPrefix(prefix, ref argPos, StringComparison.OrdinalIgnoreCase) || message.Author.IsBot)) return;
 
 			Logging.Log("Recieved a command! \"" + message.Content + "\"", Discord.LogSeverity.Debug);
-			Logging.Log("==============================================================================================", Discord.LogSeverity.Debug);
-			Logging.Log("There are currently " + _commands.Modules.Count() + " command modules.", Discord.LogSeverity.Debug);
-			foreach (var module in _commands.Modules) {
-				Logging.Log("\tModule " + module.Name + ":", Discord.LogSeverity.Debug);
-				foreach (var command in module.Commands) {
-					Logging.Log("\t\t" + command.Name, Discord.LogSeverity.Debug);
-				}
-			}
-			Logging.Log("==============================================================================================", Discord.LogSeverity.Debug);
 
 			var context = new SocketCommandContext(_client, message);
 			await _commands.ExecuteAsync(context, argPos, null, MultiMatchHandling.Best);
-			Logging.Log("Executed command!", Discord.LogSeverity.Verbose);
+			Logging.Log("Executed command!", Discord.LogSeverity.Debug);
 		}
 	}
 }

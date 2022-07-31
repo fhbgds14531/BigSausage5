@@ -8,7 +8,7 @@ using Discord;
 namespace BigSausage {
 	public class Logging {
 
-		private static LogSeverity severityThreshold = LogSeverity.Verbose;
+		private static LogSeverity severityThreshold = LogSeverity.Debug;
 		private static string LogFileName = DateTime.Now.ToString().Replace("/", ".").Replace(":", ".") + " Log.txt";
 		private static string LogPath = Utils.GetProcessPathDir() + "\\Files\\Logging";
 
