@@ -23,24 +23,31 @@ namespace BigSausage.Permissions {
 
 		internal static readonly ulong ME = 198575970624471040;
 
-		private static bool initialized = false;
+		private static bool _initialized = false;
 
 		private static Dictionary<ulong, Dictionary<ulong, int>> _loadedPermissions;
 
-		private static void Initialize() {
+		public static void Initialize() {
 			Logging.Log("Initializing permissions...", LogSeverity.Info);
-			if (!initialized) {
-				DiscordSocketClient client = BigSausage.GetClient();
+			if (!_initialized) {
+				DiscordSocketClient? client = BigSausage.GetClient();
 				if (client != null) {
 					_loadedPermissions = new Dictionary<ulong, Dictionary<ulong, int>>();
+					Logging.Log("Loading permissions from disk...", LogSeverity.Debug);
 					foreach (KeyValuePair<ulong, SerializableDictionary<ulong, int>> pair in IO.IOUtilities.GetPermissionLevelsFromDisk()) { //Guild
+						Logging.Log($"Processing permissions for guild {pair.Key}...", LogSeverity.Debug);
 						Dictionary<ulong, int> userPerms = new Dictionary<ulong, int>();
 						foreach (KeyValuePair<ulong, int> user in pair.Value) { //User
 							userPerms[user.Key] = user.Value;
 						}
 						_loadedPermissions[pair.Key] = userPerms;
 					}
-					initialized = true;
+					Logging.Log("Permissions Initialized successfully!", LogSeverity.Debug);
+					_initialized = true;
+					foreach (IGuild guild in client.Guilds) {
+						InitPermissionsForGuild(guild);
+					}
+					return;
 				} else {
 					Logging.Log("Client is null during permissions initialization! Permissions cannot be initialized before the client exists.", LogSeverity.Error);
 					Logging.LogErrorToFile(null, null, "Client is null during permissions initialization! Permissions cannot be initialized before the client exists.");
@@ -54,7 +61,7 @@ namespace BigSausage.Permissions {
 		}
 
 		public static void InitPermissionsForGuild(IGuild guild) {
-			if (!initialized) {
+			if (!_initialized) {
 				Logging.Log("Permissions interaction was requested but has not yet been initialized. Initializing...", LogSeverity.Warning);
 				Initialize();
 			}
@@ -95,7 +102,7 @@ namespace BigSausage.Permissions {
 		}
 
 		public static EnumPermissionLevel GetUserPermissionLevelInGuild(IGuild guild, IUser user) {
-			if (!initialized) {
+			if (!_initialized) {
 				Logging.Log("Permission level has been requested but permissions have not been initialized! Initializing...", LogSeverity.Warning);
 				Initialize();
 			}
@@ -107,7 +114,7 @@ namespace BigSausage.Permissions {
 		}
 
 		public static bool UserMeetsPermissionRequirements(IGuild guild, IUser user, EnumPermissionLevel permissionLevel) {
-			if (!initialized) {
+			if (!_initialized) {
 				Logging.Log("Permission level has been requested but permissions have not been initialized! Initializing...", LogSeverity.Warning);
 				Initialize();
 			}
@@ -115,7 +122,7 @@ namespace BigSausage.Permissions {
 		}
 
 		public static void Save() {
-			if (!initialized) {
+			if (!_initialized) {
 				Logging.Log("Permissions save was requested but it has not been initialized! Ignoring request...", LogSeverity.Warning);
 				return;
 			}
@@ -131,6 +138,13 @@ namespace BigSausage.Permissions {
 			Logging.Log("Done!", LogSeverity.Debug);
 			Logging.Log("Saving permissions to disk...", LogSeverity.Verbose);
 			IO.IOUtilities.SavePermissionsToDisk(output);
+		}
+
+		public static void Reload() {
+			Logging.Log("Reloading permissions...", LogSeverity.Debug);
+			_loadedPermissions = null;
+			_initialized = false;
+			Initialize();
 		}
 	}
 }

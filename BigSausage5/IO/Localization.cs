@@ -69,14 +69,19 @@ namespace BigSausage {
 		}
 
 		public string GetLocalizedString(string locale, string str) {
-			if (!this._initialized) Initialize();
-			Dictionary<string, string>? localLocaleLUT;
-			_localizationTables.TryGetValue(locale, out localLocaleLUT);
-			if (localLocaleLUT != null) {
-				return localLocaleLUT[str];
-			} else {
-				Logging.LogErrorToFile(null, null, "Failed to get localization!");
-				Logging.Log("Failed to get Localization \"" + locale + "\"!", LogSeverity.Error);
+			try {
+				if (!this._initialized) Initialize();
+				Dictionary<string, string>? localLocaleLUT;
+				_localizationTables.TryGetValue(locale, out localLocaleLUT);
+				if (localLocaleLUT != null) {
+					return localLocaleLUT[str];
+				} else {
+					Logging.LogErrorToFile(null, null, "Failed to get localization!");
+					Logging.Log("Failed to get Localization \"" + locale + "\"!", LogSeverity.Error);
+					return str;
+				}
+			} catch (Exception e) {
+				Logging.LogException(e, "Exception loading localized string!");
 				return str;
 			}
 		}

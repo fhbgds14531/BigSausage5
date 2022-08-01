@@ -73,11 +73,13 @@ namespace BigSausage {
 			Logging.Log("Shutting Down...", LogSeverity.Info);
 			Permissions.Permissions.Save();
 			if(_client != null) await _client.StopAsync();
+			Logging.Log("Successfully stopped!", LogSeverity.Info);
 		}
 
 		private async Task BotReady() {
 			if(_commandHandler != null) await _commandHandler.InitGlobalSlashCommands(_client);
-			if(_client == null) return;
+			if(_client == null) return; 
+
 			foreach (IGuild guild in _client.Guilds) {
 				ulong guildId = guild.Id;
 				string guildName = guild.Name;
@@ -108,9 +110,12 @@ namespace BigSausage {
 					File.WriteAllText(guildFilePath + "\\selected_locale.bs", contents[0]);
 				}
 
-				Logging.Log("Asserting permissions initialization...", LogSeverity.Verbose);
-				Permissions.Permissions.InitPermissionsForGuild(guild);
+				
 			}
+			Logging.Log("Asserting permissions initialization...", LogSeverity.Verbose);
+			Permissions.Permissions.Initialize();
+			Logging.Log("Asserting Linkables initialization...", LogSeverity.Verbose);
+			IO.Linkables.Initialize();
 			return;
 		}
 

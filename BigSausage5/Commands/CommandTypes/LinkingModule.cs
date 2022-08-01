@@ -9,20 +9,20 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace BigSausage.Commands.CommandTypes {
-	internal class LinkingModule : ModuleBase<SocketCommandContext> {
+	public class LinkingModule : ModuleBase<SocketCommandContext> {
 
 		[Command("image")]
-		public async Task Image([Remainder] string[] args) {
+		public async Task Image([Remainder] string args) {
 			await Task.CompletedTask;
 		}
 
 		[Command("voice")]
-		public async Task Voice([Remainder] string[] args) {
+		public async Task Voice([Remainder] string args) {
 			await Task.CompletedTask;
 		}
 
 		[Command("upload")]
-		public async Task Upload([Remainder] string[] triggers) {
+		public async Task Upload([Remainder] string triggerStrings = "") {
 			Logging.Log("Upload requested!", LogSeverity.Debug);
 			if(Permissions.Permissions.UserMeetsPermissionRequirements(Context, Permissions.EnumPermissionLevel.High)) {
 				Logging.Log("User has permission!", LogSeverity.Debug);
@@ -32,6 +32,8 @@ namespace BigSausage.Commands.CommandTypes {
 						await Utils.ReplyToMessageFromCommand(Context, "Sorry, your attachment (" + attachment.Filename +") is too large! Please keep uploads under 5Mb.");
 						continue;
 					} else {
+						if (triggerStrings == String.Empty) triggerStrings = attachment.Filename;
+						string[] triggers = triggerStrings.Split(" ");
 						Logging.Log("Attachment is under 5Mb!", LogSeverity.Debug);
 						string type = attachment.ContentType;
 						string? lName;
@@ -53,7 +55,7 @@ namespace BigSausage.Commands.CommandTypes {
 								if (!triggers.Contains(lName)) _ = triggers.Append(lName);
 								Logging.Log("Audio upload request from guild \"" + Context.Guild.Name + "\" (" + guildID + ") accepted! Downloading " +
 									attachment.Filename + " to disk...", LogSeverity.Info);
-								IO.IOUtilities.DownloadFile(attachment.Url, filename);
+								IO.IOUtilities.DownloadFile(attachment.Url, filename); 
 								Linkable lkb = new(lName, guildID, filename, lType, triggers);
 								Linkables.AddLinkableToGuild(Context.Guild, lkb);
 								Logging.Log("Attachment downloaded and added!", LogSeverity.Debug);
@@ -63,8 +65,10 @@ namespace BigSausage.Commands.CommandTypes {
 							}
 						} else if (type.StartsWith("image")) {
 							lType = "image";
-							Regex images = new("([^\\s]+(\\.(?i)(jpg|jpeg|png|bmp|gif))$)");
-							if (images.IsMatch(type.Substring(type.LastIndexOf("/"), type.Length - 1))) {
+							Logging.Log("Attachment identified as an image!", LogSeverity.Debug);
+							Regex images = new("(image\\/(jpg|jpeg|png|bmp|gif))$");
+							if (images.IsMatch(type)) {
+								Logging.Log("Attachment file extension verified!", LogSeverity.Debug);
 								guildID = Context.Guild.Id.ToString();
 								filename = Utils.GetProcessPathDir() + "\\Files\\Guilds\\" + guildID + "\\Linkables\\Images\\" + attachment.Filename;
 								lName = attachment.Filename[..attachment.Filename.LastIndexOf(".")];
@@ -74,14 +78,18 @@ namespace BigSausage.Commands.CommandTypes {
 								IO.IOUtilities.DownloadFile(attachment.Url, filename);
 								Linkable lkb = new(lName, guildID, filename, lType, triggers);
 								Linkables.AddLinkableToGuild(Context.Guild, lkb);
+								Logging.Log("Attachment downloaded and added!", LogSeverity.Debug);
 							} else {
-								await Utils.ReplyToMessageFromCommand(Context, "Sorry, your attachment (" + ") is of an invalid type! Images must be of type `jpg`, `jpeg`, `png`, `bmp`, or `gif`");
+								await Utils.ReplyToMessageFromCommand(Context, $"Sorry, your attachment ({attachment.Filename}) is of an invalid type ({attachment.ContentType})! Images must be of type `jpg`, `jpeg`, `png`, `bmp`, or `gif`");
 								continue;
 							}
+						} else {
+							Logging.Log($"Attachment type ({attachment.ContentType}) is not recognized!", LogSeverity.Warning);
 						}
 					}
 				}
 			} else {
+				Logging.Log("User did not meet permissions", LogSeverity.Warning);
 				await Utils.SendNoPermissionReply(Context);
 			}
 		}

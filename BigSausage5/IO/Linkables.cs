@@ -32,6 +32,8 @@ namespace BigSausage.IO {
 			if (_linkables != null) {
 				_linkables[guild.Id].Add(linkable);
 				IO.IOUtilities.SaveLinkablesToDisk(BigSausage.GetClient(), _linkables);
+			} else {
+				Logging.Log("Linkables have been initialized but are still null!", LogSeverity.Critical);
 			}
 		}
 
