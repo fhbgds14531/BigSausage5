@@ -27,6 +27,11 @@ namespace BigSausage.Permissions {
 
 		private static Dictionary<ulong, Dictionary<ulong, int>> _loadedPermissions;
 
+		public Permissions() {
+			_loadedPermissions = new();
+			Initialize();
+		}
+
 		public static void Initialize() {
 			Logging.Log("Initializing permissions...", LogSeverity.Info);
 			if (!_initialized) {
@@ -36,7 +41,7 @@ namespace BigSausage.Permissions {
 					Logging.Log("Loading permissions from disk...", LogSeverity.Debug);
 					foreach (KeyValuePair<ulong, SerializableDictionary<ulong, int>> pair in IO.IOUtilities.GetPermissionLevelsFromDisk()) { //Guild
 						Logging.Log($"Processing permissions for guild {pair.Key}...", LogSeverity.Debug);
-						Dictionary<ulong, int> userPerms = new Dictionary<ulong, int>();
+						Dictionary<ulong, int> userPerms = new();
 						foreach (KeyValuePair<ulong, int> user in pair.Value) { //User
 							userPerms[user.Key] = user.Value;
 						}
@@ -118,7 +123,7 @@ namespace BigSausage.Permissions {
 				Logging.Log("Permission level has been requested but permissions have not been initialized! Initializing...", LogSeverity.Warning);
 				Initialize();
 			}
-			return user.Id == ME ? true : (int) permissionLevel <= _loadedPermissions[guild.Id][user.Id];
+			return user.Id == ME || (int) permissionLevel <= _loadedPermissions[guild.Id][user.Id];
 		}
 
 		public static void Save() {
@@ -127,9 +132,9 @@ namespace BigSausage.Permissions {
 				return;
 			}
 			Logging.Log("Converting permissions to serializable data...", LogSeverity.Debug);
-			SerializableDictionary<ulong, SerializableDictionary<ulong, int>> output = new SerializableDictionary<ulong, SerializableDictionary<ulong, int>>();
+			SerializableDictionary<ulong, SerializableDictionary<ulong, int>> output = new();
 			foreach (KeyValuePair<ulong, Dictionary<ulong, int>> pair in _loadedPermissions) { //Guild
-				SerializableDictionary<ulong, int> userPerms = new SerializableDictionary<ulong, int>();
+				SerializableDictionary<ulong, int> userPerms = new();
 				foreach (KeyValuePair<ulong, int> user in pair.Value) { //User
 					userPerms[user.Key] = user.Value;
 				}
@@ -142,7 +147,7 @@ namespace BigSausage.Permissions {
 
 		public static void Reload() {
 			Logging.Log("Reloading permissions...", LogSeverity.Debug);
-			_loadedPermissions = null;
+			_loadedPermissions = new();
 			_initialized = false;
 			Initialize();
 		}

@@ -35,7 +35,7 @@ namespace BigSausage.Commands {
 		}
 
 		public void ReadXml(XmlReader reader) {
-			XmlSerializer stringSerializer = new XmlSerializer(typeof(string));
+			XmlSerializer stringSerializer = new (typeof(string));
 
 			bool wasEmpty = reader.IsEmptyElement;
 			reader.Read();
@@ -46,69 +46,79 @@ namespace BigSausage.Commands {
 				reader.ReadStartElement("linkable");
 				reader.ReadStartElement("descriptors");
 				reader.ReadStartElement("name");
-				Name = (string)stringSerializer.Deserialize(reader);
+				Name = (string?)stringSerializer.Deserialize(reader);
 				reader.ReadEndElement();
 				reader.ReadStartElement("filename");
-				Filename = (string)stringSerializer.Deserialize(reader);
+				Filename = (string?)stringSerializer.Deserialize(reader);
 				reader.ReadEndElement();
 				reader.ReadStartElement("type");
-				string input = (string)stringSerializer.Deserialize(reader);
-				if (input == "image") {
-					Logging.Log("Loading legacy image linkable!", Discord.LogSeverity.Warning);
-					type = EnumLinkableType.Image;
-				} else if (input == "audio") {
-					Logging.Log("Loading legacy audio linkable!", Discord.LogSeverity.Warning);
-					type = EnumLinkableType.Audio;
+				string? input = (string?)stringSerializer.Deserialize(reader);
+				if (input != null) {
+					if (input == "image") {
+						Logging.Log("Loading legacy image linkable!", Discord.LogSeverity.Warning);
+						type = EnumLinkableType.Image;
+					} else if (input == "audio") {
+						Logging.Log("Loading legacy audio linkable!", Discord.LogSeverity.Warning);
+						type = EnumLinkableType.Audio;
+					} else {
+						type = (EnumLinkableType)int.Parse(input);
+					}
+					reader.ReadEndElement();
+					reader.ReadStartElement("guildID");
+					GuildID = (string?)stringSerializer.Deserialize(reader);
+					reader.ReadEndElement();
+					reader.ReadEndElement();
+					reader.ReadStartElement("triggers");
+					List<string> loadedTriggers = new ();
+					while (reader.NodeType != System.Xml.XmlNodeType.EndElement) {
+						string? trigger = (string?)stringSerializer.Deserialize(reader);
+						if (trigger != null) {
+							loadedTriggers.Add(trigger);
+							reader.MoveToContent();
+						}
+					}
+					Triggers = loadedTriggers.ToArray();
+					reader.ReadEndElement();
+					reader.ReadEndElement();
+					reader.ReadEndElement();
 				} else {
-					type = (EnumLinkableType)int.Parse(input);
+					throw new IOException("Linkable type is null!");
 				}
-				reader.ReadEndElement();
-				reader.ReadStartElement("guildID");
-				GuildID = (string)stringSerializer.Deserialize(reader);
-				reader.ReadEndElement();
-				reader.ReadEndElement();
-				reader.ReadStartElement("triggers");
-				List<string> loadedTriggers = new List<string>();
-				while (reader.NodeType != System.Xml.XmlNodeType.EndElement) {
-					loadedTriggers.Add((string)stringSerializer.Deserialize(reader));
-					reader.MoveToContent();
-				}
-				Triggers = loadedTriggers.ToArray();
-				reader.ReadEndElement();
-				reader.ReadEndElement();
-				reader.ReadEndElement();
-
 			} catch (Exception ex) {
 				Logging.LogException(ex, "Error while deserializing linkable!");
 			}
 		}
 
 		public void WriteXml(XmlWriter writer) {
-			XmlSerializer stringSerializer = new XmlSerializer(typeof(string));
-
-			writer.WriteStartElement("linkable");
+			XmlSerializer stringSerializer = new(typeof(string));
+			if (type != null) {
+				writer.WriteStartElement("linkable");
 				writer.WriteStartElement("descriptors");
-					writer.WriteStartElement("name");
-						stringSerializer.Serialize(writer, Name);
-					writer.WriteEndElement();
-					writer.WriteStartElement("filename");
-						stringSerializer.Serialize(writer, Filename);
-					writer.WriteEndElement();
-					writer.WriteStartElement("type");
-						stringSerializer.Serialize(writer, "" + (int)type.Value);
-					writer.WriteEndElement();
-					writer.WriteStartElement("guildID");
-						stringSerializer.Serialize(writer, GuildID);
-					writer.WriteEndElement();
+				writer.WriteStartElement("name");
+				stringSerializer.Serialize(writer, Name);
+				writer.WriteEndElement();
+				writer.WriteStartElement("filename");
+				stringSerializer.Serialize(writer, Filename);
+				writer.WriteEndElement();
+				writer.WriteStartElement("type");
+				stringSerializer.Serialize(writer, "" + (int)type.Value);
+				writer.WriteEndElement();
+				writer.WriteStartElement("guildID");
+				stringSerializer.Serialize(writer, GuildID);
+				writer.WriteEndElement();
 				writer.WriteEndElement();
 				writer.WriteStartElement("triggers");
-					if (Triggers != null) {
-						foreach (string trigger in Triggers) {
-							stringSerializer.Serialize(writer, trigger);
-						}
+				if (Triggers != null) {
+					foreach (string trigger in Triggers) {
+						stringSerializer.Serialize(writer, trigger);
 					}
+				}
 				writer.WriteEndElement();
-			writer.WriteEndElement();
+				writer.WriteEndElement();
+			} else {
+				Logging.Critical("Attempted to serialize a null type in a linkable, aborting!");
+				return;
+			}
 		}
 	}
 

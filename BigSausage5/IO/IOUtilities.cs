@@ -28,7 +28,7 @@ namespace BigSausage.IO {
 		public static bool AssertDirectoryExists(string path) {
 			if (path != null) {
 				if (!Directory.Exists(path)) {
-					DirectoryInfo dir = Directory.CreateDirectory(path);
+					Directory.CreateDirectory(path);
 				}
 				return true;
 			}
@@ -121,39 +121,35 @@ namespace BigSausage.IO {
 					XmlSerializer serializer = new(typeof(SerializableDictionary<ulong, SerializableDictionary<ulong, int>>));
 					Logging.Log("Opening handle...", LogSeverity.Debug);
 					SafeFileHandle handle = File.OpenHandle(Utils.GetProcessPathDir() + "\\Files\\Permissions.xml");
-					using (TextReader reader = new StreamReader(Utils.GetProcessPathDir() + "\\Files\\Permissions.xml")) {
-						object? data = null;
-						try {
-							Logging.Log("Deserializing data...", LogSeverity.Debug);
-							data = serializer.Deserialize(reader);
-						} catch (Exception ex) {
-							reader.Close();
-							reader.Dispose();
-							handle.Close();
-							handle.Dispose();
-							Logging.LogException(ex, "Error loading xml permissions!");
-						}
-						
-						reader.Close();
-						reader.Dispose();
-						handle.Close();
-						handle.Dispose();
-						if (data != null) {
-							if (data is SerializableDictionary<ulong, SerializableDictionary<ulong, int>> dictionary) {
-								Logging.Log("Data loaded successfully!", LogSeverity.Debug);
-								return dictionary;
-							} else {
-								Logging.Log("Loaded permissions but the data is of the wrong type! Defaulting...", LogSeverity.Error);
-								Logging.LogErrorToFile(null, null, "Permissions file contained bad data.");
+					using TextReader reader = new StreamReader(Utils.GetProcessPathDir() + "\\Files\\Permissions.xml");
+					object? data = null;
+					try {
+						Logging.Log("Deserializing data...", LogSeverity.Debug);
+						data = serializer.Deserialize(reader);
+					} catch (Exception ex) {
+						data = null;
+						Logging.LogException(ex, "Error loading xml permissions!");
+					}
 
-								return new SerializableDictionary<ulong, SerializableDictionary<ulong, int>>();
-							}
+					reader.Close();
+					reader.Dispose();
+					handle.Close();
+					handle.Dispose();
+					if (data != null) {
+						if (data is SerializableDictionary<ulong, SerializableDictionary<ulong, int>> dictionary) {
+							Logging.Log("Data loaded successfully!", LogSeverity.Debug);
+							return dictionary;
 						} else {
-							Logging.Log("Permissions.xml cannot be loaded! Defaulting...", LogSeverity.Error);
-							Logging.LogErrorToFile(null, null, "Permissions file loaded a null object.");
-							
+							Logging.Log("Loaded permissions but the data is of the wrong type! Defaulting...", LogSeverity.Error);
+							Logging.LogErrorToFile(null, null, "Permissions file contained bad data.");
+
 							return new SerializableDictionary<ulong, SerializableDictionary<ulong, int>>();
 						}
+					} else {
+						Logging.Log("Permissions.xml cannot be loaded! Defaulting...", LogSeverity.Error);
+						Logging.LogErrorToFile(null, null, "Permissions file loaded a null object.");
+
+						return new SerializableDictionary<ulong, SerializableDictionary<ulong, int>>();
 					}
 				} else {
 					Logging.Log("Permissions file doesn't exist!", LogSeverity.Warning);

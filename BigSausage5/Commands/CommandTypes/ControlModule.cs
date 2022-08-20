@@ -29,7 +29,7 @@ namespace BigSausage.Commands.CommandTypes {
 			args += " -callerID " + BigSausage.GetBotMainProcess().Id;
 			await Utils.ReplyToMessageFromCommand(Context, "Updating...");
 			Logging.Log("Launching updater process...", Discord.LogSeverity.Info);
-			Process externalProcess = new Process();
+			Process externalProcess = new();
 			externalProcess.StartInfo.FileName = Utils.GetProcessPathDir() + "\\Files\\Updater\\BigSausageUpdater.exe";
 			externalProcess.StartInfo.Arguments = args;
 			externalProcess.Start();

@@ -17,6 +17,8 @@ namespace BigSausage {
 
 		public Localization(DiscordSocketClient client) {
 			_client = client;
+			_localizationSelections = new();
+			_localizationTables = new();
 			Initialize();
  		}
 
@@ -26,7 +28,7 @@ namespace BigSausage {
 		}
 
 		private Dictionary<string, Dictionary<string, string>> LoadLocalizationTables() {
-			Dictionary<IGuild, string> selections = new Dictionary<IGuild, string>();
+			Dictionary<IGuild, string> selections = new();
 			foreach (IGuild guild in _client.Guilds) {
 				string? localeName;
 				try {
@@ -71,8 +73,7 @@ namespace BigSausage {
 		public string GetLocalizedString(string locale, string str) {
 			try {
 				if (!this._initialized) Initialize();
-				Dictionary<string, string>? localLocaleLUT;
-				_localizationTables.TryGetValue(locale, out localLocaleLUT);
+				_localizationTables.TryGetValue(locale, out Dictionary<string, string>? localLocaleLUT);
 				if (localLocaleLUT != null) {
 					return localLocaleLUT[str];
 				} else {

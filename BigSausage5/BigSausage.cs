@@ -58,8 +58,8 @@ namespace BigSausage {
 
 		}
 
-		public static Process? GetBotMainProcess() {
-			return _process;
+		public static Process GetBotMainProcess() {
+			return _process ?? Process.GetCurrentProcess();
 		}
 
 		public static Task TimeToClose() {
@@ -67,15 +67,25 @@ namespace BigSausage {
 			return Task.CompletedTask;
 		}
 
-		private async static Task Shutdown() {
-			Logging.Log("Beginning shutdown sequence...", LogSeverity.Info);
+		private async static Task Shutdown(int code = 0) {
+			Logging.Info("Beginning shutdown sequence...");
 			IO.Linkables.Save();
-			if(_client != null) await _client.LogoutAsync();
-			Logging.Log("Logged out of discord.", LogSeverity.Info);
-			Logging.Log("Shutting Down...", LogSeverity.Info);
+			if (_client != null) {
+				await _client.LogoutAsync();
+				Logging.Info("Logged out of discord.");
+			} else {
+				Logging.Verbose("Client is null so no need to log out.");
+			}
+			Logging.Info("Shutting Down...");
 			Permissions.Permissions.Save();
-			if(_client != null) await _client.StopAsync();
-			Logging.Log("Successfully stopped!", LogSeverity.Info);
+			if (_client != null) {
+				await _client.StopAsync();
+				Logging.Info("Successfully stopped client!");
+			} else {
+				Logging.Info("Client is null so no need to stop.");
+			}
+			Logging.Info("Successfully shut down!");
+			Environment.Exit(code);
 		}
 
 		private async Task BotReady() {
@@ -129,13 +139,19 @@ namespace BigSausage {
 				long end = DateTime.Now.Ticks;
 				long duration = end - start;
 				duration /= System.TimeSpan.TicksPerSecond;
-				Logging.Log("Finished initializing localization in " + duration.ToString("F") + " seconds!", LogSeverity.Warning);
+				Logging.Log("Finished initializing localization in " + duration.ToString("F3") + " seconds!", LogSeverity.Warning);
 			}
 			return _localizationManager;
 		}
 
-		public static DiscordSocketClient? GetClient() {
-			return _client;
+		public static DiscordSocketClient GetClient() {
+			if (_client != null) {
+				return _client;
+			} else {
+				Logging.LogException(new InvalidOperationException("Attempted to access client when it was null!"), "Please wait for the bot to initialize before calling this method.");
+				_ = Shutdown(-1);
+				return new DiscordSocketClient();
+			}
 		}
 
 	}

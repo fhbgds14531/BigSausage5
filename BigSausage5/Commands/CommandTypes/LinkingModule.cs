@@ -48,12 +48,22 @@ namespace BigSausage.Commands.CommandTypes {
 
 			Logging.Log("Getting linkables for listing...", LogSeverity.Debug);
 			List<Linkable> linkables = Linkables.GetLinkablesForGuild(Context.Guild);
-			foreach (Linkable linkable in linkables) {
-				if (linkable.type == EnumLinkableType.Image && listImages) {
-					images.Add(linkable.Name);
-				}
-				if (linkable.type == EnumLinkableType.Audio && listAudio) {
-					audio.Add(linkable.Name);			
+			if(linkables != null && linkables.Count > 0) {
+				foreach (Linkable linkable in linkables) {
+					if (linkable.type == EnumLinkableType.Image && listImages) {
+						if (linkable.Name != null) {
+							images.Add(linkable.Name);
+						} else {
+							Logging.Critical($"Linkable has a null name, have things happened out of order or did loading fail?");
+						}
+					}
+					if (linkable.type == EnumLinkableType.Audio && listAudio) {
+						if (linkable.Name != null) {
+							audio.Add(linkable.Name);
+						} else {
+							Logging.Critical($"Linkable has a null name, have things happened out of order or did loading fail?");
+						}
+					}
 				}
 			}
 
@@ -83,12 +93,18 @@ namespace BigSausage.Commands.CommandTypes {
 
 
 		[Command("image")]
-		public async Task Image([Remainder] string args) {
+		public async Task Image([Remainder] string names) {
+			if (names != null && names.Length > 0) {
+
+			}
 			await Task.CompletedTask;
 		}
 
 		[Command("voice")]
-		public async Task Voice([Remainder] string args) {
+		public async Task Voice([Remainder] string names) {
+			if (names != null && names.Length > 0) {
+
+			}
 			await Task.CompletedTask;
 		}
 
@@ -98,7 +114,7 @@ namespace BigSausage.Commands.CommandTypes {
 			if(Permissions.Permissions.UserMeetsPermissionRequirements(Context, Permissions.EnumPermissionLevel.High)) {
 				Logging.Debug("User has permission!");
 				Attachment[] attachments = Context.Message.Attachments.ToArray();
-				Logging.Verbose($"Upload command with {attachments.Length} attachments received! Processing attachments...");
+				Logging.Verbose($"Upload command with {attachments.Length} attachment{(attachments.Length == 1 ? "" : "s")} received! Processing attachments...");
 				foreach (Attachment attachment in attachments) {
 					Logging.Debug($"\"{attachment.Filename}\"...");
 					_ = await DownloadAndAddLinkable(Context.Guild, attachment, triggerStrings.Split(" "));

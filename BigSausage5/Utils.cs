@@ -70,7 +70,7 @@ namespace BigSausage {
 					output += ", ";
 				}
 			}
-			return output.Substring(0, output.Length - 2);
+			return output[0..^2];
 		}
 
 		public static string GetProcessPathDir() {
