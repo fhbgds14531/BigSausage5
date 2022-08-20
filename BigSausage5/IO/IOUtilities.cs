@@ -173,7 +173,7 @@ namespace BigSausage.IO {
 		}
 
 		public static void SaveLinkablesToDisk(DiscordSocketClient? client, SerializableDictionary<ulong, List<Linkable>> linkables) {
-			Logging.Log("Saving linkables to disk...", LogSeverity.Info);
+			Logging.Log("Writing linkables to disk...", LogSeverity.Info);
 			if (client != null) {
 				foreach (IGuild guild in client.Guilds) {
 					Logging.Log("Processing guild \"" + guild.Name + "\" (" + guild.Id.ToString() + ")...", LogSeverity.Info);

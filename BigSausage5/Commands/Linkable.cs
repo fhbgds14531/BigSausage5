@@ -12,22 +12,22 @@ namespace BigSausage.Commands {
 
 		public string? Filename;
 
-		public string? Type;
-
 		public string? GuildID;
 
 		public string? Name;
 
 		public string[]? Triggers;
 
+		public EnumLinkableType? type;
+
 		private Linkable() { }
 
-		public Linkable(string name, string guildID, string filename, string type, params string[] triggers) {
+		public Linkable(string name, string guildID, string filename, EnumLinkableType type, params string[] triggers) {
 			this.Name = name;
 			this.GuildID = guildID;
 			this.Filename = filename;
 			this.Triggers = triggers;
-			this.Type = type;
+			this.type = type;
 		}
 
 		public XmlSchema? GetSchema() {
@@ -41,33 +41,46 @@ namespace BigSausage.Commands {
 			reader.Read();
 
 			if (wasEmpty) return;
+			try {
 
-			
 				reader.ReadStartElement("linkable");
-					reader.ReadStartElement("descriptors");
-						reader.ReadStartElement("name");
-							Name = (string) stringSerializer.Deserialize(reader);
-						reader.ReadEndElement();
-						reader.ReadStartElement("filename");
-							Filename = (string) stringSerializer.Deserialize(reader);
-						reader.ReadEndElement();
-						reader.ReadStartElement("type");
-							Type = (string) stringSerializer.Deserialize(reader);
-						reader.ReadEndElement();
-						reader.ReadStartElement("guildID");
-							GuildID = (string) stringSerializer.Deserialize(reader);
-						reader.ReadEndElement();
-					reader.ReadEndElement();
-					reader.ReadStartElement("triggers");
-						List<string> loadedTriggers = new List<string>();
-						while (reader.NodeType != System.Xml.XmlNodeType.EndElement) {
-							loadedTriggers.Add((string)stringSerializer.Deserialize(reader));
-							reader.MoveToContent();
-						}
-						Triggers = loadedTriggers.ToArray();
-					reader.ReadEndElement();
+				reader.ReadStartElement("descriptors");
+				reader.ReadStartElement("name");
+				Name = (string)stringSerializer.Deserialize(reader);
 				reader.ReadEndElement();
-			reader.ReadEndElement();
+				reader.ReadStartElement("filename");
+				Filename = (string)stringSerializer.Deserialize(reader);
+				reader.ReadEndElement();
+				reader.ReadStartElement("type");
+				string input = (string)stringSerializer.Deserialize(reader);
+				if (input == "image") {
+					Logging.Log("Loading legacy image linkable!", Discord.LogSeverity.Warning);
+					type = EnumLinkableType.Image;
+				} else if (input == "audio") {
+					Logging.Log("Loading legacy audio linkable!", Discord.LogSeverity.Warning);
+					type = EnumLinkableType.Audio;
+				} else {
+					type = (EnumLinkableType)int.Parse(input);
+				}
+				reader.ReadEndElement();
+				reader.ReadStartElement("guildID");
+				GuildID = (string)stringSerializer.Deserialize(reader);
+				reader.ReadEndElement();
+				reader.ReadEndElement();
+				reader.ReadStartElement("triggers");
+				List<string> loadedTriggers = new List<string>();
+				while (reader.NodeType != System.Xml.XmlNodeType.EndElement) {
+					loadedTriggers.Add((string)stringSerializer.Deserialize(reader));
+					reader.MoveToContent();
+				}
+				Triggers = loadedTriggers.ToArray();
+				reader.ReadEndElement();
+				reader.ReadEndElement();
+				reader.ReadEndElement();
+
+			} catch (Exception ex) {
+				Logging.LogException(ex, "Error while deserializing linkable!");
+			}
 		}
 
 		public void WriteXml(XmlWriter writer) {
@@ -82,7 +95,7 @@ namespace BigSausage.Commands {
 						stringSerializer.Serialize(writer, Filename);
 					writer.WriteEndElement();
 					writer.WriteStartElement("type");
-						stringSerializer.Serialize(writer, Type);
+						stringSerializer.Serialize(writer, "" + (int)type.Value);
 					writer.WriteEndElement();
 					writer.WriteStartElement("guildID");
 						stringSerializer.Serialize(writer, GuildID);
@@ -97,5 +110,10 @@ namespace BigSausage.Commands {
 				writer.WriteEndElement();
 			writer.WriteEndElement();
 		}
+	}
+
+	public enum EnumLinkableType {
+		Image,
+		Audio
 	}
 }

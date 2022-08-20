@@ -68,6 +68,8 @@ namespace BigSausage {
 		}
 
 		private async static Task Shutdown() {
+			Logging.Log("Beginning shutdown sequence...", LogSeverity.Info);
+			IO.Linkables.Save();
 			if(_client != null) await _client.LogoutAsync();
 			Logging.Log("Logged out of discord.", LogSeverity.Info);
 			Logging.Log("Shutting Down...", LogSeverity.Info);

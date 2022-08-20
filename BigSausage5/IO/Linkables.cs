@@ -37,6 +37,35 @@ namespace BigSausage.IO {
 			}
 		}
 
+		public static void Save() {
+			if (_initialized && _linkables != null) {
+				Logging.Log("Saving linkables...", LogSeverity.Debug);
+				IO.IOUtilities.SaveLinkablesToDisk(BigSausage.GetClient(), _linkables);
+			} else {
+				Logging.Log("Linkables were never properly initialized, so they will not be saved.", LogSeverity.Warning);
+			}
+		}
+
+		public static List<Linkable> GetLinkablesForGuild(IGuild guild) {
+			if (!_initialized) {
+				Logging.Log($"Linkables for guild \"{guild.Name}\"({guild.Id}) requested but linkables have not been initialized!", LogSeverity.Warning);
+				Initialize();
+			}
+			if (_linkables == null) {
+				Logging.Log("Linkables initialization failed!", LogSeverity.Critical);
+				throw new IOException();
+			}
+			List<Linkable> linkables = new();
+
+			if (_linkables.ContainsKey(guild.Id)) {
+				linkables = _linkables[guild.Id];
+			} else {
+				Logging.Log($"Linkables is missing an entry for guild \"{guild.Name}\"({guild.Id})!", LogSeverity.Error);
+			}
+
+			return linkables;
+		}
+
 		public static List<Linkable> ScanForLinkableTriggers(IGuild guild, string message) {
 			if (!_initialized) {
 				Logging.Log("Trigger parsing was requested but Linkables have not yet been initialized!", LogSeverity.Warning);

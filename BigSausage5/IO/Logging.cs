@@ -12,13 +12,28 @@ namespace BigSausage {
 		private static readonly string LogFileName = DateTime.Now.ToString().Replace("/", ".").Replace(":", ".") + " Log.txt";
 		private static readonly string LogPath = Utils.GetProcessPathDir() + "\\Files\\Logging";
 
-		[Obsolete("Please use the version that includes severity.")]
-		public static void Log(string message) {
+		public static void Log(string message, LogSeverity severity) {
+			Log(new LogMessage(severity, "BigSausage", message));
+		}
+
+		public static void Debug(string message) {
+			Log(new LogMessage(LogSeverity.Debug, "BigSausage", message));
+		}
+
+		public static void Info(string message) {
 			Log(new LogMessage(LogSeverity.Info, "BigSausage", message));
 		}
 
-		public static void Log(string message, LogSeverity severity) {
-			Log(new LogMessage(severity, "BigSausage", message));
+		public static void Verbose(string message) {
+			Log(new LogMessage(LogSeverity.Verbose, "BigSausage", message));
+		}
+
+		public static void Warning(string message) {
+			Log(new LogMessage(LogSeverity.Warning, "BigSausage", message));
+		}
+
+		public static void Critical(string message) {
+			Log(new LogMessage(LogSeverity.Critical, "BigSausage", message));
 		}
 
 		public static Task Log(LogMessage msg) {
