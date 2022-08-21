@@ -1,4 +1,5 @@
 ﻿using BigSausage.Commands;
+using BigSausage.Localization;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -12,11 +13,12 @@ namespace BigSausage {
 		private static Process? _process;
 		private static DiscordSocketClient? _client;
 		private static CommandHandler? _commandHandler;
-		private static Localization? _localizationManager;
+		private static Localization.Localization? _localizationManager;
 		private static TaskCompletionSource<bool>? _shutdownTask;
 
 		public BigSausage() {
 			_process = Process.GetCurrentProcess();
+			Logging.Info($"Launching BigSausage v{typeof(BigSausage).Assembly.GetName().Version}");
 			DiscordSocketConfig discordSocketConfig = new() {
 				GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers
 			};
@@ -95,51 +97,54 @@ namespace BigSausage {
 			foreach (IGuild guild in _client.Guilds) {
 				ulong guildId = guild.Id;
 				string guildName = guild.Name;
-				Logging.Log("Setting up guild " + guildId + " (" + guildName + ")...", LogSeverity.Info);
+				Logging.Info("Setting up guild " + guildId + " (" + guildName + ")...");
 				string guildFilePath = Utils.GetProcessPathDir() + "\\Files\\Guilds\\" + guildId;
 
-				Logging.Log("Asserting guild directory...", LogSeverity.Verbose);
+				Logging.Verbose("Asserting guild directory...");
 				IO.IOUtilities.AssertDirectoryExists(guildFilePath);
 
-				Logging.Log("Asserting guild name file...", LogSeverity.Verbose);
+				Logging.Verbose("Asserting guild name file...");
 				IO.IOUtilities.AssertFileExists(guildFilePath, "." + guildName);
 
-				Logging.Log("Asserting guild image directory...", LogSeverity.Verbose);
+				Logging.Verbose("Asserting guild image directory...");
 				IO.IOUtilities.AssertDirectoryExists(guildFilePath + "\\Linkables\\Images");
 
-				Logging.Log("Asserting guild audio directory...", LogSeverity.Verbose);
+				Logging.Verbose("Asserting guild audio directory...");
 				IO.IOUtilities.AssertDirectoryExists(guildFilePath + "\\Linkables\\Audio");
 
-				Logging.Log("Asserting guild TTS file...", LogSeverity.Verbose);
+				Logging.Verbose("Asserting guild TTS file...");
 				IO.IOUtilities.AssertFileExists(guildFilePath, "TTS.txt");
 				
-				Logging.Log("Asserting guild localization selection file...", LogSeverity.Verbose);
+				Logging.Verbose("Asserting guild localization selection file...");
 				IO.IOUtilities.AssertFileExists(guildFilePath, "selected_locale.bs");
 				string[] contents = File.ReadAllLines(guildFilePath + "\\selected_locale.bs");
 				if (contents.Length == 0) {
-					Logging.Log("Localization file for " + guildName + " (" + guildId + ") is empty! Defaulting to en_US", LogSeverity.Warning);
+					Logging.Warning("Localization file for " + guildName + " (" + guildId + ") is empty! Defaulting to en_US");
 					contents = new string[]{ "en_US" };
 					File.WriteAllText(guildFilePath + "\\selected_locale.bs", contents[0]);
 				}
 
 				
 			}
-			Logging.Log("Asserting permissions initialization...", LogSeverity.Verbose);
+			Logging.Verbose("Asserting permissions initialization...");
 			Permissions.Permissions.Initialize();
-			Logging.Log("Asserting Linkables initialization...", LogSeverity.Verbose);
+			Logging.Verbose("Asserting Linkables initialization...");
 			IO.Linkables.Initialize();
+			foreach(string s in Utils.GetASCIILogo()) {
+				Logging.Info(s);
+			}
 			return;
 		}
 
-		public static Localization GetLocalizationManager(DiscordSocketClient client) {
+		public static Localization.Localization GetLocalizationManager(DiscordSocketClient client) {
 			if (_localizationManager == null) {
-				Logging.Log("LocalizationManager was requested but has not yet been initialized! Initializing it now...", LogSeverity.Warning);
+				Logging.Warning("LocalizationManager was requested but has not yet been initialized! Initializing it now...");
 				long start = DateTime.Now.Ticks;
-				_localizationManager = new Localization(client);
+				_localizationManager = new Localization.Localization(client);
 				long end = DateTime.Now.Ticks;
 				long duration = end - start;
 				duration /= System.TimeSpan.TicksPerSecond;
-				Logging.Log("Finished initializing localization in " + duration.ToString("F3") + " seconds!", LogSeverity.Warning);
+				Logging.Warning("Finished initializing localization in " + duration.ToString("F3") + " seconds!");
 			}
 			return _localizationManager;
 		}

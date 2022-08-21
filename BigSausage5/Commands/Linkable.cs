@@ -16,11 +16,13 @@ namespace BigSausage.Commands {
 
 		public string? Name;
 
-		public string[]? Triggers;
+		public string[] Triggers;
 
 		public EnumLinkableType? type;
 
-		private Linkable() { }
+		private Linkable() {
+			Triggers = Array.Empty<string>();
+		}
 
 		public Linkable(string name, string guildID, string filename, EnumLinkableType type, params string[] triggers) {
 			this.Name = name;
@@ -28,6 +30,7 @@ namespace BigSausage.Commands {
 			this.Filename = filename;
 			this.Triggers = triggers;
 			this.type = type;
+			if(Triggers == null) Triggers = Array.Empty<string>();
 		}
 
 		public XmlSchema? GetSchema() {
@@ -55,10 +58,10 @@ namespace BigSausage.Commands {
 				string? input = (string?)stringSerializer.Deserialize(reader);
 				if (input != null) {
 					if (input == "image") {
-						Logging.Log("Loading legacy image linkable!", Discord.LogSeverity.Warning);
+						Logging.Warning("Loading legacy image linkable!");
 						type = EnumLinkableType.Image;
 					} else if (input == "audio") {
-						Logging.Log("Loading legacy audio linkable!", Discord.LogSeverity.Warning);
+						Logging.Warning("Loading legacy audio linkable!");
 						type = EnumLinkableType.Audio;
 					} else {
 						type = (EnumLinkableType)int.Parse(input);

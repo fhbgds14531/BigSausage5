@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 
-namespace BigSausage {
+namespace BigSausage.Localization {
 	public class Localization {
 
 		private readonly DiscordSocketClient _client;
@@ -48,7 +48,7 @@ namespace BigSausage {
 				if (!this._initialized) Initialize();
 				string locale = _localizationSelections[guild];
 				if (locale == null) {
-					Logging.Log(guild.Name + " (" + guild.Id + ") has no localization selection! Defaulting to en_US...", LogSeverity.Warning);
+					Logging.Warning(guild.Name + " (" + guild.Id + ") has no localization selection! Defaulting to en_US...");
 					locale = "en_US";
 					_localizationSelections[guild] = locale;
 				}
@@ -57,14 +57,14 @@ namespace BigSausage {
 					return localLocaleLUT[str];
 				} else {
 					Logging.LogErrorToFile(guild, null, "Failed to get localization!");
-					Logging.Log("Failed to get Localization for Guild " + guild.Name + "(" + guild.Id + ")!", LogSeverity.Error);
+					Logging.Warning("Failed to get Localization for Guild " + guild.Name + "(" + guild.Id + ")!");
 					return str;
 				}
 			} catch (Exception e) {
 				Logging.LogException(e, "attempting to localize a string using " + _localizationSelections[guild]);
-				Logging.Log("The dictionary for " + _localizationSelections[guild] + " contains the following keys:", LogSeverity.Critical);
+				Logging.Critical("The dictionary for " + _localizationSelections[guild] + " contains the following keys:");
 				foreach(string s in _localizationTables[_localizationSelections[guild]].Keys) {
-					Logging.Log(s, LogSeverity.Critical);
+					Logging.Critical(s);
 				}
 				return str;
 			}
@@ -78,14 +78,37 @@ namespace BigSausage {
 					return localLocaleLUT[str];
 				} else {
 					Logging.LogErrorToFile(null, null, "Failed to get localization!");
-					Logging.Log("Failed to get Localization \"" + locale + "\"!", LogSeverity.Error);
+					Logging.Error("Failed to get Localization \"" + locale + "\"!");
 					return str;
 				}
 			} catch (Exception e) {
 				Logging.LogException(e, "Exception loading localized string!");
-				return str;
+				Logging.Warning("Defaulting to en_US");
+				_localizationTables.TryGetValue("en_US", out Dictionary<string, string>? localLocaleLUT);
+				if (localLocaleLUT != null) {
+					return localLocaleLUT[str];
+				} else {
+					Logging.LogErrorToFile(null, null, "Failed to get even the default localization!");
+					Logging.Critical("Failed to get even the default Localization! Something has gone seriously wrong.");
+					return str;
+				}
 			}
 		}
 
 	}
+
+	static class DefaultLocalizationStringsEN_US {
+
+		public static List<string> GetDefaultStrings() {
+			List<string> list = new();
+
+			list.Add("command_help_general=Displays the help text for a command");
+			list.Add("command_ping_description=Tests whether the bot has a connection");
+			list.Add("command_TTS_description=Plays a random tts from the uploaded strings");
+
+			return list;
+		}
+
+	}
+
 }

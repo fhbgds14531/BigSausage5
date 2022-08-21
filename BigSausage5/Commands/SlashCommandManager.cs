@@ -14,18 +14,18 @@ namespace BigSausage.Commands {
 		public static string HandleSlashCommand(SocketSlashCommand command) {
 			return command.Data.Name switch {
 				"bs-tts" => TTSCommand(command),
-				"bs-upload" => UploadCommand(command),
 				"bs-help" => HelpCommand(command),
+				"bs-ping" => PingCommand(command),
 				_ => "Unrecognized command!",
 			};
 		}
 
-		private static string TTSCommand(SocketSlashCommand command) {
-			return "bs-tts";
+		private static string PingCommand(SocketSlashCommand command) {
+			return "pong";
 		}
 
-		private static string UploadCommand(SocketSlashCommand command) {
-			return "bs-upload";
+		private static string TTSCommand(SocketSlashCommand command) {
+			return "bs-tts";
 		}
 
 		private static string HelpCommand(SocketSlashCommand command) {

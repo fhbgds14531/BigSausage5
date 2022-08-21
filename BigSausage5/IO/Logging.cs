@@ -12,6 +12,7 @@ namespace BigSausage {
 		private static readonly string LogFileName = DateTime.Now.ToString().Replace("/", ".").Replace(":", ".") + " Log.txt";
 		private static readonly string LogPath = Utils.GetProcessPathDir() + "\\Files\\Logging";
 
+		[Obsolete("Use one of the specific methods instead!")]
 		public static void Log(string message, LogSeverity severity) {
 			Log(new LogMessage(severity, "BigSausage", message));
 		}
@@ -34,6 +35,10 @@ namespace BigSausage {
 
 		public static void Critical(string message) {
 			Log(new LogMessage(LogSeverity.Critical, "BigSausage", message));
+		}
+
+		public static void Error(string message) {
+			Log(new LogMessage(LogSeverity.Error, "BigSausage", message));
 		}
 
 		public static Task Log(LogMessage msg) {
@@ -98,11 +103,11 @@ namespace BigSausage {
 
 		public static void LogException(Exception e, string description) {
 			LogErrorToFile(null, null, description + " (" + e.GetType().FullName + ")");
-			Log(description, LogSeverity.Critical);
-			Log("Exception " + e.GetType().FullName + " occured!", LogSeverity.Critical);
-			Log(e.Message, LogSeverity.Critical);
+			Critical(description);
+			Critical("Exception " + e.GetType().FullName + " occured!");
+			Critical(e.Message);
 			if (e.TargetSite != null) {
-				Log("Occured at " + e.TargetSite.Name + " in " + e.TargetSite.Module.FullyQualifiedName, LogSeverity.Critical);
+				Critical("Occured at " + e.TargetSite.Name + " in " + e.TargetSite.Module.FullyQualifiedName);
 			}
 		}
 
@@ -156,7 +161,7 @@ namespace BigSausage {
 			string? loggingFolder = Utils.GetProcessPathDir();
 
 			if (loggingFolder == null) {
-				Console.WriteLine("Error logging to file: Process Path (" + loggingFolder + ") is null.");
+				Error("Error logging to file: Process Path (" + loggingFolder + ") is null.");
 				return;
 			}
 
@@ -167,7 +172,7 @@ namespace BigSausage {
 
 			IO.IOUtilities.AssertDirectoryExists(errorFilePath);
 
-			FileStream errorFile = File.Create(loggingFolder + "\\ERROR_" + System.DateTime.Now.ToString().Replace("/", "_").Replace(":", ".") + ".txt");
+			FileStream errorFile = File.Create(errorFilePath + "\\ERROR_" + System.DateTime.Now.ToString().Replace("/", "_").Replace(":", ".") + ".txt");
 
 			string outputString = lines.Aggregate((x, y) => x + "\n" + y);
 

@@ -29,37 +29,36 @@ namespace BigSausage.Permissions {
 
 		public Permissions() {
 			_loadedPermissions = new();
-			Initialize();
 		}
 
 		public static void Initialize() {
-			Logging.Log("Initializing permissions...", LogSeverity.Info);
+			Logging.Info("Initializing permissions...");
 			if (!_initialized) {
 				DiscordSocketClient? client = BigSausage.GetClient();
 				if (client != null) {
 					_loadedPermissions = new Dictionary<ulong, Dictionary<ulong, int>>();
-					Logging.Log("Loading permissions from disk...", LogSeverity.Debug);
+					Logging.Debug("Loading permissions from disk...");
 					foreach (KeyValuePair<ulong, SerializableDictionary<ulong, int>> pair in IO.IOUtilities.GetPermissionLevelsFromDisk()) { //Guild
-						Logging.Log($"Processing permissions for guild {pair.Key}...", LogSeverity.Debug);
+						Logging.Debug($"Processing permissions for guild {pair.Key}...");
 						Dictionary<ulong, int> userPerms = new();
 						foreach (KeyValuePair<ulong, int> user in pair.Value) { //User
 							userPerms[user.Key] = user.Value;
 						}
 						_loadedPermissions[pair.Key] = userPerms;
 					}
-					Logging.Log("Permissions Initialized successfully!", LogSeverity.Debug);
+					Logging.Debug("Permissions Initialized successfully!");
 					_initialized = true;
 					foreach (IGuild guild in client.Guilds) {
 						InitPermissionsForGuild(guild);
 					}
 					return;
 				} else {
-					Logging.Log("Client is null during permissions initialization! Permissions cannot be initialized before the client exists.", LogSeverity.Error);
+					Logging.Error("Client is null during permissions initialization! Permissions cannot be initialized before the client exists.");
 					Logging.LogErrorToFile(null, null, "Client is null during permissions initialization! Permissions cannot be initialized before the client exists.");
 					throw new InvalidOperationException("Attempted to initialize permissions before the client existed!");
 				}
 			} else {
-				Logging.Log("Attempted to initialize permissions more than once! Skipping...", LogSeverity.Warning);
+				Logging.Warning("Attempted to initialize permissions more than once! Skipping...");
 				Logging.LogErrorToFile(null, null, "Attempted to initialize Permissions more than once!");
 				return;
 			}
@@ -67,48 +66,48 @@ namespace BigSausage.Permissions {
 
 		public static void InitPermissionsForGuild(IGuild guild) {
 			if (!_initialized) {
-				Logging.Log("Permissions interaction was requested but has not yet been initialized. Initializing...", LogSeverity.Warning);
+				Logging.Warning("Permissions interaction was requested but has not yet been initialized. Initializing...");
 				Initialize();
 			}
-			Logging.Log("Beginning initialization of permissions for guild " + guild.Name + " (" + guild.Id + ")...", LogSeverity.Verbose);
+			Logging.Warning("Beginning initialization of permissions for guild " + guild.Name + " (" + guild.Id + ")...");
 			IReadOnlyCollection<IGuildUser> users = guild.GetUsersAsync().Result;
 			Dictionary<ulong, int> perms;
 			if (_loadedPermissions.ContainsKey(guild.Id)) {
 				perms = _loadedPermissions[guild.Id];
-				Logging.Log("Permissions for guild " + guild.Name + " (" + guild.Id + ") loaded successfully!", LogSeverity.Verbose);
+				Logging.Verbose("Permissions for guild " + guild.Name + " (" + guild.Id + ") loaded successfully!");
 			} else {
-				Logging.Log("Permissions for guild " + guild.Name + " (" + guild.Id + ") couldn't be found! Setting default permissions...", LogSeverity.Verbose);
+				Logging.Verbose("Permissions for guild " + guild.Name + " (" + guild.Id + ") couldn't be found! Setting default permissions...");
 				perms = new Dictionary<ulong, int>();
 			}
 			foreach (IGuildUser user in users) {
 				if (!perms.ContainsKey(user.Id)) {
 					if (user.IsBot) {
 						perms[user.Id] = (int) EnumPermissionLevel.None;
-						Logging.Log("User " + user.Username + " (" + user.Id + ") is a bot! Defaulting to None...", LogSeverity.Verbose);
+						Logging.Verbose("User " + user.Username + " (" + user.Id + ") is a bot! Defaulting to None...");
 					} else if (user.Id == ME) {
 						perms[user.Id] = (int)EnumPermissionLevel.BotCreator;
-						Logging.Log("User " + user.Username + " (" + user.Id + ") is not present in permissions! User is bot creator, defaulting to BotCreator...", LogSeverity.Verbose);
+						Logging.Verbose("User " + user.Username + " (" + user.Id + ") is not present in permissions! User is bot creator, defaulting to BotCreator...");
 					} else if (guild.GetOwnerAsync().Result.Id == user.Id) {
 						perms[user.Id] = (int)EnumPermissionLevel.ServerOwner;
-						Logging.Log("User " + user.Username + " (" + user.Id + ") is not present in permissions! User is server owner, defaulting to ServerOwner...", LogSeverity.Verbose);
+						Logging.Verbose("User " + user.Username + " (" + user.Id + ") is not present in permissions! User is server owner, defaulting to ServerOwner...");
 					} else if (user.GuildPermissions.Administrator) {
 						perms[user.Id] = (int)EnumPermissionLevel.Admin;
-						Logging.Log("User " + user.Username + " (" + user.Id + ") is not present in permissions! User is an administrator, defaulting to Admin...", LogSeverity.Verbose);
+						Logging.Verbose("User " + user.Username + " (" + user.Id + ") is not present in permissions! User is an administrator, defaulting to Admin...");
 					} else {
 						perms[user.Id] = (int)EnumPermissionLevel.Medium;
-						Logging.Log("User " + user.Username + " (" + user.Id + ") is not present in permissions! Defaulting to Medium...", LogSeverity.Verbose);
+						Logging.Verbose("User " + user.Username + " (" + user.Id + ") is not present in permissions! Defaulting to Medium...");
 					}
 				} else {
-					Logging.Log("User " + user.Username + " (" + user.Id + ") is present in permissions, skipping...", LogSeverity.Verbose);
+					Logging.Verbose("User " + user.Username + " (" + user.Id + ") is present in permissions, skipping...");
 				}
 			}
 			_loadedPermissions[guild.Id] = perms;
-			Logging.Log("Initialized permissions!", LogSeverity.Verbose);
+			Logging.Verbose("Initialized permissions!");
 		}
 
 		public static EnumPermissionLevel GetUserPermissionLevelInGuild(IGuild guild, IUser user) {
 			if (!_initialized) {
-				Logging.Log("Permission level has been requested but permissions have not been initialized! Initializing...", LogSeverity.Warning);
+				Logging.Warning("Permission level has been requested but permissions have not been initialized! Initializing...");
 				Initialize();
 			}
 			return (EnumPermissionLevel) _loadedPermissions[guild.Id][user.Id];
@@ -120,7 +119,7 @@ namespace BigSausage.Permissions {
 
 		public static bool UserMeetsPermissionRequirements(IGuild guild, IUser user, EnumPermissionLevel permissionLevel) {
 			if (!_initialized) {
-				Logging.Log("Permission level has been requested but permissions have not been initialized! Initializing...", LogSeverity.Warning);
+				Logging.Warning("Permission level has been requested but permissions have not been initialized! Initializing...");
 				Initialize();
 			}
 			return user.Id == ME || (int) permissionLevel <= _loadedPermissions[guild.Id][user.Id];
@@ -128,10 +127,10 @@ namespace BigSausage.Permissions {
 
 		public static void Save() {
 			if (!_initialized) {
-				Logging.Log("Permissions save was requested but it has not been initialized! Ignoring request...", LogSeverity.Warning);
+				Logging.Warning("Permissions save was requested but it has not been initialized! Ignoring request...");
 				return;
 			}
-			Logging.Log("Converting permissions to serializable data...", LogSeverity.Debug);
+			Logging.Debug("Converting permissions to serializable data...");
 			SerializableDictionary<ulong, SerializableDictionary<ulong, int>> output = new();
 			foreach (KeyValuePair<ulong, Dictionary<ulong, int>> pair in _loadedPermissions) { //Guild
 				SerializableDictionary<ulong, int> userPerms = new();
@@ -140,13 +139,13 @@ namespace BigSausage.Permissions {
 				}
 				output[pair.Key] = userPerms;
 			}
-			Logging.Log("Done!", LogSeverity.Debug);
-			Logging.Log("Saving permissions to disk...", LogSeverity.Verbose);
+			Logging.Debug("Done!");
+			Logging.Verbose("Saving permissions to disk...");
 			IO.IOUtilities.SavePermissionsToDisk(output);
 		}
 
 		public static void Reload() {
-			Logging.Log("Reloading permissions...", LogSeverity.Debug);
+			Logging.Debug("Reloading permissions...");
 			_loadedPermissions = new();
 			_initialized = false;
 			Initialize();

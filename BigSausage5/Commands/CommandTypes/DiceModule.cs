@@ -11,21 +11,21 @@ namespace BigSausage.Commands.CommandTypes {
 
 		[Command("roll")]
 		public async Task Roll(string dice) {
-			Logging.Log("Executing dice roll...", Discord.LogSeverity.Debug);
+			Logging.Debug("Executing dice roll...");
 			await Utils.ReplyToMessageFromCommand(Context, Process(dice));
 		}
 
 		private string Process(string input) {
-			Logging.Log("Processing input...", Discord.LogSeverity.Debug);
+			Logging.Debug("Processing input...");
 			DiceRoll? diceRoll = GetRoll(input);
 			if (diceRoll != null) {
-				Logging.Log($"Parsed the input \"{input}\" and recieved a non-null value!", Discord.LogSeverity.Debug);
+				Logging.Debug($"Parsed the input \"{input}\" and recieved a non-null value!");
 				diceRoll.Roll();
-				Logging.Log($"Rolled the dice! The numerical result is {diceRoll.GetIntTotal()} and the string result is as follows:", Discord.LogSeverity.Debug);
+				Logging.Debug($"Rolled the dice! The numerical result is {diceRoll.GetIntTotal()} and the string result is as follows:");
 				string result = $"Result: {diceRoll.GetIntTotal()}\n`";
 				List<string> results = diceRoll.GetStringResult();
 				for (int i = 0; i < results.Count; i++) {
-					Logging.Log($"Roll result {i}: {results[i]}", Discord.LogSeverity.Debug);
+					Logging.Debug($"Roll result {i}: {results[i]}");
 					result += results[i] + (i == results.Count - 1 ? "" : ",");
 				}
 				result += "`";
@@ -37,7 +37,7 @@ namespace BigSausage.Commands.CommandTypes {
 
 		private DiceRoll? GetRoll(string currentRoll) {
 			try {
-				Logging.Log($"Evaluating {currentRoll} for rolls...", Discord.LogSeverity.Debug);
+				Logging.Debug($"Evaluating {currentRoll} for rolls...");
 				Regex roll = new("([+|-]*)(\\d+)d(\\d+)|([+|-])(\\d+)");
 				if (roll.IsMatch(currentRoll)) {
 					string newString = "";
@@ -45,19 +45,19 @@ namespace BigSausage.Commands.CommandTypes {
 					if (m.Groups[1] != null) if (m.Groups[1].Value == "-") sign = -1;
 					if (m.Groups[5].Value != null && m.Groups[5].Value != string.Empty) {
 						if (m.Groups[4] != null) if (m.Groups[4].Value == "-") sign = -1;
-						Logging.Log($"Group 5 is not null ({m.Groups[5]})! Treating this input as an int!", Discord.LogSeverity.Debug);
-						Logging.Log($"Parsed capture ({m.Groups[0].Value}) and found [Number = {m.Groups[5].Value}, Sign = {sign}]", Discord.LogSeverity.Debug);
+						Logging.Debug($"Group 5 is not null ({m.Groups[5]})! Treating this input as an int!");
+						Logging.Debug($"Parsed capture ({m.Groups[0].Value}) and found [Number = {m.Groups[5].Value}, Sign = {sign}]");
 						newString = m.Captures[0].Length == currentRoll.Length ? "done" : currentRoll[m.Captures[0].Length..];
 						return new DiceRoll(int.Parse(m.Groups[5].Value), GetRoll(newString), sign);
 					}
 					int dice = int.Parse(m.Groups[2].Value);
 					int sides = int.Parse(m.Groups[3].Value);
-					Logging.Log($"Parsed capture ({m.Groups[0].Value}) and found [Dice = {dice}, Sides = {sides}, Sign = {sign}]", Discord.LogSeverity.Debug);
+					Logging.Debug($"Parsed capture ({m.Groups[0].Value}) and found [Dice = {dice}, Sides = {sides}, Sign = {sign}]");
 					newString = m.Captures[0].Length == currentRoll.Length ? "done" : currentRoll[m.Captures[0].Length..];
-					Logging.Log($"Finished parsing group! New string is \"{newString}\"", Discord.LogSeverity.Debug);
+					Logging.Debug($"Finished parsing group! New string is \"{newString}\"");
 					return new DiceRoll(dice, sides, GetRoll(newString), sign);
 				} else {
-					Logging.Log($"Reached the end of the tree! returning null as the input string is \"{currentRoll}\"", Discord.LogSeverity.Debug);
+					Logging.Debug($"Reached the end of the tree! returning null as the input string is \"{currentRoll}\"");
 					return null;
 				}
 			} catch (Exception ex) {
@@ -82,7 +82,7 @@ namespace BigSausage.Commands.CommandTypes {
 				this.dice = dice;
 				this.mod = modifier;
 				this.rolls = new List<string>();
-				Logging.Log($"Created new DiceRoll: Dice={dice} Sides={sides} Sign={signMult}", Discord.LogSeverity.Debug);
+				Logging.Debug($"Created new DiceRoll: Dice={dice} Sides={sides} Sign={signMult}");
 			}
 
 			public DiceRoll(int number) {
@@ -91,7 +91,7 @@ namespace BigSausage.Commands.CommandTypes {
 				this.mod = null;
 				this.signMult = 1;
 				this.rolls = new List<string>();
-				Logging.Log($"Created new DiceRoll: Dice={dice} Sides={sides} Sign={signMult}", Discord.LogSeverity.Debug);
+				Logging.Debug($"Created new DiceRoll: Dice={dice} Sides={sides} Sign={signMult}");
 			}
 
 			public DiceRoll(int number, DiceRoll? mod, int sign) {
@@ -100,7 +100,7 @@ namespace BigSausage.Commands.CommandTypes {
 				this.mod = mod;
 				this.signMult = sign;
 				this.rolls = new List<string>();
-				Logging.Log($"Created new DiceRoll: Dice={dice} Sides={sides} Sign={signMult}", Discord.LogSeverity.Debug);
+				Logging.Debug($"Created new DiceRoll: Dice={dice} Sides={sides} Sign={signMult}");
 			}
 
 			public DiceRoll(int sides, int numberOfDice, DiceRoll? modifier) {
@@ -109,13 +109,13 @@ namespace BigSausage.Commands.CommandTypes {
 				this.mod = modifier;
 				this.signMult = 1;
 				this.rolls = new List<string>();
-				Logging.Log($"Created new DiceRoll: Dice={dice} Sides={sides} Sign={signMult}", Discord.LogSeverity.Debug);
+				Logging.Debug($"Created new DiceRoll: Dice={dice} Sides={sides} Sign={signMult}");
 			}
 
 			public DiceRoll Roll() {
 				if (mod != null && sides != -1) { // If this is null, treat this like an int.
 					Random random = new();
-					Logging.Log($"Rolling {dice}d{sides}...", Discord.LogSeverity.Debug);
+					Logging.Debug($"Rolling {dice}d{sides}...");
 					rolls = new List<string>();
 					int result = 0;
 					for (int i = 0; i < dice; i++) {
@@ -126,7 +126,7 @@ namespace BigSausage.Commands.CommandTypes {
 					mod.Roll().GetStringResult().ForEach(res => rolls.Add(res));
 					total = result + mod.GetIntTotal();
 				} else if(mod != null){
-					Logging.Log($"Handling integer modifier:  Dice={dice} Sides={sides} Sign={signMult}", Discord.LogSeverity.Debug);
+					Logging.Debug($"Handling integer modifier:  Dice={dice} Sides={sides} Sign={signMult}");
 					total = (dice * signMult) + mod.Roll().GetIntTotal();
 					rolls.Add((dice * signMult).ToString());
 					mod.GetStringResult().ForEach(res => rolls.Add(res));

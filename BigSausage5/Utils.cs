@@ -22,13 +22,15 @@ namespace BigSausage {
 		}
 
 		public static List<string> EnforceCharacterLimit(List<string> messages) {
-			Logging.Log($"Enforcing character limit for {messages.Count} messages...", Discord.LogSeverity.Debug);
+			Logging.Debug($"Enforcing character limit for {(messages.Count == 1 ? messages.Count + " message" : messages.Count + " messages")}...");
 			List<string> result = new();
 
 			foreach (string message in messages) {
 				if (message.Length >= _characterLimit) {
+					Logging.Debug($"Message length is longer than {_characterLimit}! Passing to splitter...");
 					SplitMessageFormattingAware(message).ForEach((s) => result.Add(s));
 				} else {
+					Logging.Debug($"Message length is under {_characterLimit}! No need to split.");
 					result.Add(message);
 				}
 			}
@@ -38,21 +40,38 @@ namespace BigSausage {
 
 		public static List<string> SplitMessageFormattingAware(string message) {
 			List<string> result = new();
+			const int padding = 25;
 
-
-			Regex matcher = new("(```[\\w*\\,\\s]*```)|(`[\\w*\\ ]*`)|(\\*+[\\w\\ ]+\\*+)");
+			//Regex matcher = new("(```[\\w*\\,\\s]*```)|(`[\\w*\\ ]*`)|(\\*+[\\w\\ ]+\\*+)");
 
 			int messageOverstep = message.Length - _characterLimit;
+			Logging.Debug($"Message length ({message.Length}) needs to be reduced by {messageOverstep}!");
 
-			if (matcher.IsMatch(_testString)) {
-				Match match = matcher.Match(_testString);
-				int count = 0;
-				foreach (Group group in match.Groups) {
-					Logging.Log($"Test string groups: {count}={match.Groups[count++]}", Discord.LogSeverity.Debug);
+			string[] items = message.Split(", ");
+			string intermediate = "";
+			foreach (string item in items) {
+				if(intermediate.Length + padding >= _characterLimit) {
+					Logging.Debug("Message segment split at " + intermediate.Length + " characters.");
+					result.Add(intermediate[..intermediate.LastIndexOf(",")] + "```");
+					intermediate = "```";
 				}
-			}
+				intermediate += item + ", ";
 
-			result.Add(message);
+			}
+			Logging.Debug("Final message segment set at " + intermediate.Length + " characters.");
+			result.Add(intermediate[..intermediate.LastIndexOf(",")]);
+
+			//if (matcher.IsMatch(message)) {
+			//	Match match = matcher.Match(message);
+			//	int count = 0;
+			//	while (match.Success) {
+			//		foreach (Capture capture in match.Captures) {
+			//			Logging.Debug($"Test string captures: {count}={match.Captures[count++]}");
+			//		}
+			//		match = match.NextMatch();
+			//	}
+			//}
+
 			return result;
 		}
 
@@ -77,7 +96,7 @@ namespace BigSausage {
 			if (Environment.ProcessPath != null) {
 				return Environment.ProcessPath.Replace("\\BigSausage5.exe", "");
 			} else {
-				Logging.Log("Failed to get ProcessPath! Defaulting to Desktop.", Discord.LogSeverity.Error);
+				Logging.Error("Failed to get ProcessPath! Defaulting to Desktop.");
 				Logging.LogErrorToFile(null, null, "Failed to get ProcessPath!");
 				return Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "\\BigSausage Fallback Directory";
 			}
@@ -96,7 +115,18 @@ namespace BigSausage {
 			await ReplyToMessageFromCommand(context, "Sorry! You don't have permission to use that command! :(");
 		}
 
-		private static readonly string _testString = "Images:\n```image1, image2, image3, image4, image5, image6\nimage7, image8, image9```\n \nAudio Clips:\n```clip1, clip2, clip3, clip4\nclip5, clip6, clip7```\n \nImages2:\n```test, test, test2```\n\n*bold text*\n**italics**\n\n`small quote`\n\n`\n\n`\n\n";
+		public static List<string> GetASCIILogo() {
+			return new List<string>() { "  ____  _          _____                                  ",
+										" |  _ \\(_)        / ____|                                 ",
+										" | |_) |_  __ _  | (___   __ _ _   _ ___  __ _  __ _  ___ ",
+										" |  _ <| |/ _` |  \\___ \\ / _` | | | / __|/ _` |/ _` |/ _ \\",
+										" | |_) | | (_| |  ____) | (_| | |_| \\__ \\ (_| | (_| |  __/",
+										" |____/|_|\\__, | |_____/ \\__,_|\\__,_|___/\\__,_|\\__, |\\___|",
+										"           __/ |                                __/ |     ",
+										"          |____/                               |____/     " };
+		}
+
+		public static readonly string FormattingTestString = "Images:\n```image1, image2, image3, image4, image5, image6\nimage7, image8, image9```\n \nAudio Clips:\n```clip1, clip2, clip3, clip4\nclip5, clip6, clip7```\n \nImages2:\n```test, test, test2```\n\n*bold text*\n**italics**\n\n`small quote`\n\n`\n\n`\n\n";
 	}
 
 	
