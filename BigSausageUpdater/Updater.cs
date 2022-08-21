@@ -15,7 +15,6 @@ namespace BigSausageUpdater {
 		private static string? botLocation;
 
 		public Updater() {
-			Environment.SetEnvironmentVariable("BS_ReadytoUpdate", "false");
 		}
 
 		public static Task Main(string[] args) => new Updater().MainAsync(args);

@@ -15,8 +15,10 @@ namespace BigSausage {
 		private static CommandHandler? _commandHandler;
 		private static Localization.Localization? _localizationManager;
 		private static TaskCompletionSource<bool>? _shutdownTask;
+		private static DateTime _startTime;
 
 		public BigSausage() {
+			_startTime = DateTime.Now;
 			_process = Process.GetCurrentProcess();
 			Logging.Info($"Launching BigSausage v{typeof(BigSausage).Assembly.GetName().Version}");
 			DiscordSocketConfig discordSocketConfig = new() {
@@ -58,6 +60,10 @@ namespace BigSausage {
 				await Shutdown();
 			}
 
+		}
+
+		public static TimeSpan GetUptime() {
+			return DateTime.Now.Subtract(_startTime);
 		}
 
 		public static Process GetBotMainProcess() {

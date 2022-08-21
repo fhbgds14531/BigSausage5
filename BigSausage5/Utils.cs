@@ -42,8 +42,6 @@ namespace BigSausage {
 			List<string> result = new();
 			const int padding = 25;
 
-			//Regex matcher = new("(```[\\w*\\,\\s]*```)|(`[\\w*\\ ]*`)|(\\*+[\\w\\ ]+\\*+)");
-
 			int messageOverstep = message.Length - _characterLimit;
 			Logging.Debug($"Message length ({message.Length}) needs to be reduced by {messageOverstep}!");
 
@@ -60,17 +58,6 @@ namespace BigSausage {
 			}
 			Logging.Debug("Final message segment set at " + intermediate.Length + " characters.");
 			result.Add(intermediate[..intermediate.LastIndexOf(",")]);
-
-			//if (matcher.IsMatch(message)) {
-			//	Match match = matcher.Match(message);
-			//	int count = 0;
-			//	while (match.Success) {
-			//		foreach (Capture capture in match.Captures) {
-			//			Logging.Debug($"Test string captures: {count}={match.Captures[count++]}");
-			//		}
-			//		match = match.NextMatch();
-			//	}
-			//}
 
 			return result;
 		}
@@ -92,6 +79,15 @@ namespace BigSausage {
 			return output[0..^2];
 		}
 
+		public static String BytesToHumanReadableString(long byteCount) {
+			string[] suf = { "B", "KB", "MB", "GB", "TB", "PB", "EB" }; //Longs run out around EB
+			if (byteCount == 0)
+				return "0" + suf[0];
+			long bytes = Math.Abs(byteCount);
+			int place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
+			double num = Math.Round(bytes / Math.Pow(1024, place), 2);
+			return (Math.Sign(byteCount) * num).ToString() + suf[place];
+		}
 		public static string GetProcessPathDir() {
 			if (Environment.ProcessPath != null) {
 				return Environment.ProcessPath.Replace("\\BigSausage5.exe", "");

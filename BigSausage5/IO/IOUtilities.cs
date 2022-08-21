@@ -18,9 +18,14 @@ namespace BigSausage.IO {
 		private static readonly string[] LOCALE_NAMES = { "en_US", "funny_pirate" };
 		public static bool AssertFileExists(string path, string filename) {
 			if (path != null) {
-				SafeFileHandle handle = File.OpenHandle(path + "\\" + filename, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite, FileOptions.None);
-				handle.Close();
-				return true;
+				try {
+					SafeFileHandle handle = File.OpenHandle(path + "\\" + filename, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite, FileOptions.None);
+					handle.Close();
+					return true;
+				} catch (Exception e) {
+					Logging.LogException(e, "Could not open file " + filename);
+					Environment.Exit(-1);
+				}
 			}
 			return false;
 		}
@@ -223,6 +228,7 @@ namespace BigSausage.IO {
 					Logging.Debug($"Loading linkables for guild \"{guild.Name}\" ({guild.Id})...");
 					string dir = Utils.GetProcessPathDir() + "\\Files\\Guilds\\" + guild.Id + "\\Linkables\\";
 					AssertDirectoryExists(dir);
+					CheckForLegacyLinkablesAndConvert(guild);
 					string[] files = Directory.GetFiles(dir);
 					XmlSerializer serializer = new(typeof(Linkable));
 					List<Linkable> links = new();
@@ -263,6 +269,20 @@ namespace BigSausage.IO {
 				return ret;
 			}
 		}
+
+		private static void CheckForLegacyLinkablesAndConvert(IGuild guild) {
+			Logging.Verbose("Checking for legacy (BS4) linkables...");
+			string legacyDir = Utils.GetProcessPathDir() + "\\files\\" + guild.Id;
+			if (Directory.Exists(legacyDir)) {
+				Logging.Warning("Legacy directory found for this guild!");
+				List<string> files = Directory.GetFiles(legacyDir).ToList();
+				foreach (string file in files) {
+					Linkables.MigrateLegacyLinkable(file);
+				}
+			} else {
+				Logging.Verbose("Legacy directory not found for this guild!");
+			}
+		} 
 
 		public static void DownloadFile(string URL, string path) {
 			Logging.Verbose("Downloading to \"" + path + "\" from " + URL);

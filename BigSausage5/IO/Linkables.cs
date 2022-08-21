@@ -180,6 +180,39 @@ namespace BigSausage.IO {
 			return $"Successfully added {lName}!";
 		}
 
+		public static void MigrateLegacyLinkable(string path) {
+			EnumLinkableType? type = null;
+			EnumAttachmentValidation validation = ValidateLegacyFile(path);
+			switch (validation) {
+				case EnumAttachmentValidation.ValidWav:
+					Logging.Warning("File is a valid .wav file!");
+					type = EnumLinkableType.Audio;
+					break;
+				case EnumAttachmentValidation.ValidImage:
+					Logging.Warning("File is a valid image!");
+					type = EnumLinkableType.Image;
+					break;
+				default:
+					Logging.Warning("File is not a valid linkable, it will be skipped!");
+					return;
+			}
+			if(type != null) {
+				string filename = path.Substring(path.LastIndexOf(@"\") + 1);
+				string guildID = path.Replace(@"\" + filename, "");
+				guildID = guildID.Substring(guildID.LastIndexOf(@"\") + 1);
+				string name = filename.Replace(filename.Substring(filename.LastIndexOf(".")), "");
+				string[] triggers = { name };
+				IGuild guild = BigSausage.GetClient().GetGuild(ulong.Parse(guildID));
+				Logging.Warning("Legacy linkable data collection complete! Migrating...");
+
+				filename = Utils.GetProcessPathDir() + $"\\Files\\Guilds\\{guildID}\\Linkables\\{(type == EnumLinkableType.Audio ? "Audio" : "Images")}\\" + filename;
+				File.Move(path, filename);
+
+				AddLinkableToGuild(guild, new Linkable(name, guildID, filename, (EnumLinkableType) type, triggers));
+				Logging.Warning("Legacy linkable migrated!");
+			}
+		}
+
 		private static EnumAttachmentValidation ValidateAttachment(Attachment attachment) {
 			if (attachment.Size < 4_999_999) {
 				string type = attachment.ContentType;
@@ -196,6 +229,18 @@ namespace BigSausage.IO {
 			} else {
 				return EnumAttachmentValidation.InvalidSize;
 			}
+		}
+
+		private static EnumAttachmentValidation ValidateLegacyFile(string path) {
+			Logging.Warning("Validating legacy file...");
+			if (!File.Exists(path))  return EnumAttachmentValidation.InvalidType;
+			if (new FileInfo(path).Length > 4_999_999) return EnumAttachmentValidation.InvalidSize;
+
+			if (path.ToLower().EndsWith(".wav")) return EnumAttachmentValidation.ValidWav; 
+			
+			Regex images = new(@"(.+\.(jpg|jpeg|png|bmp|gif))$");
+			if (images.IsMatch(path)) return EnumAttachmentValidation.ValidImage;
+			return EnumAttachmentValidation.InvalidType;
 		}
 
 		private enum EnumAttachmentValidation {
