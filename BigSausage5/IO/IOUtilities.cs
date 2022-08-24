@@ -190,11 +190,10 @@ namespace BigSausage.IO {
 					string[] files = Directory.GetFiles(dir);
 					XmlSerializer serializer = new(typeof(Linkable));
 					if (linkables != null && linkables.ContainsKey(guild.Id)) {
-						Logging.Debug($"Beginning serialization of {linkables[guild.Id].Count} linkables...");
+						Logging.Debug($"Beginning serialization of {linkables[guild.Id].Count} linkable(s)...");
 						foreach (Linkable linkable in linkables[guild.Id]) {
 							if (linkable.Filename != null) {
 								AssertFileExists(dir, $"{linkable.Name}.xml");
-								Logging.Debug("Serializing " + linkable.Name + ".xml...");
 								TextWriter writer = new StreamWriter(dir + linkable.Name + ".xml");
 								serializer.Serialize(writer, linkable);
 								writer.Close();
@@ -203,6 +202,7 @@ namespace BigSausage.IO {
 								continue;
 							}
 						}
+						Logging.Debug("Done!");
 					} else {
 						Logging.Critical($"Couldn't serialize files for guild as the data doesn't exist!");
 						continue;
@@ -226,11 +226,12 @@ namespace BigSausage.IO {
 					XmlSerializer serializer = new(typeof(Linkable));
 					List<Linkable> links = new();
 					if (files != null && files.Length > 0) {
+						Logging.Debug($"Attempting to read data from {files.Length} file(s)...");
+						int successes = 0;
+						int failures = 0;
 						foreach (string file in files) {
 							if (File.Exists(file)) {
-								Logging.Debug($"Reading data from \"{file}\"...");
 								if (File.Exists(file) && file.EndsWith(".xml")) {
-									Logging.Debug("File is XML, deserializing...");
 									TextReader reader = new StreamReader(file);
 									object? data = null;
 									try {
@@ -238,20 +239,25 @@ namespace BigSausage.IO {
 									} catch (Exception ex) {
 										Logging.LogException(ex, "Tried to load Linkable and got bad data! " + file);
 									}
-									Logging.Debug("Successfully deserialized linkable file!");
 									if (data != null) {
 										if (data is Linkable linkable) {
 											links.Add(linkable);
+											successes++;
 										} else {
+											failures++;
 											Logging.Error("Successfully deserialized linkable file but the loaded object is not a Linkable! \"" + file + "\"");
 										}
 									} else {
+										failures++;
 										Logging.Error("Failed to load Linkable from file: " + file);
 									}
 									reader.Close();
+								} else {
+									failures++;
 								}
 							}
 						}
+						Logging.Debug($"Done! Successfully read data from {successes} file(s)! Failed to read data from {failures} file(s)!");
 					}
 					Logging.Debug($"Adding {links.Count} linkables to guild \"{guild.Name}\" ({guild.Id})...");
 					ret.Add(guild.Id, links);

@@ -12,7 +12,9 @@ namespace BigSausage.IO {
 		Dictionary<string, List<string>> _writeQueue;
 
 		public FileLogger() {
+			Console.WriteLine("Initializing FileLogger...");
 			this._queue = new();
+			this._writeQueue = new();
 			Thread t = new Thread(Run);
 			t.Name = "Text file line writing batcher";
 			t.Start();
@@ -20,8 +22,8 @@ namespace BigSausage.IO {
 
 		private async void Run() {
 			while (!BigSausage.GetBotMainProcess().HasExited) {
-				WriteQueuedLinesToFile();
-				await Task.Delay(1000);
+				await WriteQueuedLinesToFile();
+				await Task.Delay(500);
 			}
 		}
 
@@ -36,7 +38,7 @@ namespace BigSausage.IO {
 
 		int MaxRetries = 10;
 		int DelayOnRetry = 25;
-		private async void WriteQueuedLinesToFile() {
+		private async Task WriteQueuedLinesToFile() {
 			_writeQueue = _queue;
 			_queue = new();
 			foreach (KeyValuePair<string, List<string>> pair in _writeQueue) {
