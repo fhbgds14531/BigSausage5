@@ -63,6 +63,7 @@ namespace BigSausage {
 		}
 
 		public static string FormatListItems(List<string> list, int itemsPerLine = 8) {
+			if (list == null || list.Count == 0) return String.Empty;
 			string output = "";
 			if(itemsPerLine < 1) itemsPerLine = 1;
 			int count = 0;

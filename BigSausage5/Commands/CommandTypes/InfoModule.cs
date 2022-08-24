@@ -17,6 +17,7 @@ namespace BigSausage.Commands.CommandTypes {
 
 		[Command("stats")]
 		public async Task StatsAsync() {
+			var start = DateTime.Now;
 			Logging.Debug("Calculating statistics...");
 			Logging.Debug("Calculating uptime...");
 			TimeSpan uptime = BigSausage.GetUptime();
@@ -69,7 +70,7 @@ namespace BigSausage.Commands.CommandTypes {
 				Logging.Debug("Locale selection...");
 				systemFileDiskUsage_Global += new FileInfo(guildPath + "\\selected_locale.bs").Length;
 				Logging.Debug($"TTS file ({guildPath}\\TTS.txt)...");
-				int i = File.ReadAllLines(guildPath + "\\TTS.txt").Length;
+				int i = File.ReadAllLinesAsync(guildPath + "\\TTS.txt").Result.Length;
 				ttsLengths.Add(i);
 				if (guild.Id == Context.Guild.Id) ttsFileLength = i;
 				long ttsSize = new FileInfo(guildPath + "\\TTS.txt").Length;
@@ -202,6 +203,10 @@ namespace BigSausage.Commands.CommandTypes {
 			string result = "";
 			Logging.Debug("Packaging response...");
 			response.ForEach(s => result += s + "\n");
+			var end = DateTime.Now;
+
+			var diff = end.Subtract(start);
+			Logging.Debug($"Executed stats command in {diff.ToString()}");
 			await Utils.ReplyToMessageFromCommand(Context, result);
 		}
 

@@ -16,7 +16,7 @@ namespace BigSausage.Commands.CommandTypes {
 			Logging.Debug("Listing files...");
 			bool listImages = false;
 			bool listAudio = false;
-			if (type == null) {
+			if (type == null || type.Length == 0) {
 				Logging.Debug("List type was null!");
 				type = new string[] { "all" };
 			}
@@ -24,17 +24,20 @@ namespace BigSausage.Commands.CommandTypes {
 				case "":
 				case "all":
 				case null:
+					Logging.Debug("Interpereted command as !bs list all");
 					listAudio = true;
 					listImages = true;
 					break;
 				case "images":
 				case "image":
+					Logging.Debug("Interpereted command as !bs list images");
 					listImages = true;
 					break;
 				case "voice":
 				case "audio":
 				case "sound":
 				case "sounds":
+					Logging.Debug("Interpereted command as !bs list audio");
 					listAudio = true;
 					break;
 				default:
@@ -69,12 +72,12 @@ namespace BigSausage.Commands.CommandTypes {
 
 			List<string> finalLines = new();
 
-			if (listImages) {
+			if (listImages && images.Count > 0) {
 				Logging.Debug($"Formatting {images.Count} images...");
 				finalLines.Add("Images:");
 				finalLines.Add($"```{Utils.FormatListItems(images)}```");
 			}
-			if (listAudio) {
+			if (listAudio && audio.Count > 0) {
 				Logging.Debug($"Formatting {audio.Count} audio clips...");
 				finalLines.Add("Audio Clips:");
 				finalLines.Add($"```{Utils.FormatListItems(audio)}```");

@@ -81,21 +81,23 @@ namespace BigSausage.Permissions {
 			}
 			foreach (IGuildUser user in users) {
 				if (!perms.ContainsKey(user.Id)) {
-					if (user.IsBot) {
-						perms[user.Id] = (int) EnumPermissionLevel.None;
-						Logging.Verbose("User " + user.Username + " (" + user.Id + ") is a bot! Defaulting to None...");
-					} else if (user.Id == ME) {
-						perms[user.Id] = (int)EnumPermissionLevel.BotCreator;
-						Logging.Verbose("User " + user.Username + " (" + user.Id + ") is not present in permissions! User is bot creator, defaulting to BotCreator...");
-					} else if (guild.GetOwnerAsync().Result.Id == user.Id) {
-						perms[user.Id] = (int)EnumPermissionLevel.ServerOwner;
-						Logging.Verbose("User " + user.Username + " (" + user.Id + ") is not present in permissions! User is server owner, defaulting to ServerOwner...");
-					} else if (user.GuildPermissions.Administrator) {
-						perms[user.Id] = (int)EnumPermissionLevel.Admin;
-						Logging.Verbose("User " + user.Username + " (" + user.Id + ") is not present in permissions! User is an administrator, defaulting to Admin...");
-					} else {
-						perms[user.Id] = (int)EnumPermissionLevel.Medium;
-						Logging.Verbose("User " + user.Username + " (" + user.Id + ") is not present in permissions! Defaulting to Medium...");
+					if (guild.GetOwnerAsync().Result != null && user.Id != null){
+						if (user.IsBot) {
+							perms[user.Id] = (int)EnumPermissionLevel.None;
+							Logging.Verbose("User " + user.Username + " (" + user.Id + ") is a bot! Defaulting to None...");
+						} else if (user.Id == ME) {
+							perms[user.Id] = (int)EnumPermissionLevel.BotCreator;
+							Logging.Verbose("User " + user.Username + " (" + user.Id + ") is not present in permissions! User is bot creator, defaulting to BotCreator...");
+						} else if (guild.GetOwnerAsync().Result.Id == user.Id) {
+							perms[user.Id] = (int)EnumPermissionLevel.ServerOwner;
+							Logging.Verbose("User " + user.Username + " (" + user.Id + ") is not present in permissions! User is server owner, defaulting to ServerOwner...");
+						} else if (user.GuildPermissions.Administrator) {
+							perms[user.Id] = (int)EnumPermissionLevel.Admin;
+							Logging.Verbose("User " + user.Username + " (" + user.Id + ") is not present in permissions! User is an administrator, defaulting to Admin...");
+						} else {
+							perms[user.Id] = (int)EnumPermissionLevel.Medium;
+							Logging.Verbose("User " + user.Username + " (" + user.Id + ") is not present in permissions! Defaulting to Medium...");
+						}
 					}
 				} else {
 					Logging.Verbose("User " + user.Username + " (" + user.Id + ") is present in permissions, skipping...");

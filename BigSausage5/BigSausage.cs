@@ -48,6 +48,14 @@ namespace BigSausage {
 		public static Task Main() => new BigSausage().MainAsync();
 
 
+		public static bool ShouldRun() {
+			if (_shutdownTask != null) {
+				return _shutdownTask.Task.Result;
+			} else {
+				return true;
+			}
+		}
+
 		public async Task MainAsync() {
 			_process = Process.GetCurrentProcess();
 			if (_client != null) {

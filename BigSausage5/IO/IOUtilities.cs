@@ -15,6 +15,7 @@ using Discord.WebSocket;
 namespace BigSausage.IO {
 	internal class IOUtilities {
 
+		private static FileLogger? _fileLogger;
 		private static readonly string[] LOCALE_NAMES = { "en_US", "funny_pirate" };
 		public static bool AssertFileExists(string path, string filename) {
 			if (path != null) {
@@ -57,17 +58,10 @@ namespace BigSausage.IO {
 		}
 
 		public static bool WriteLineToFile(string line, string path, string filename) {
-			if (AssertDirectoryExists(path)) {
-				if (AssertFileExists(path, filename)) {
-					using (StreamWriter writer = File.AppendText(path + "\\" + filename)) {
-						writer.WriteLine(line);
-						writer.Flush();
-						writer.Close();
-					}
-					return true;
-				}
-			}
-			return false;
+			if (_fileLogger == null) _fileLogger = new FileLogger();
+			_fileLogger.AddLineToQueue(path + "\\" + filename, line);
+			return true;
+		
 		}
 
 		public static Dictionary<string, Dictionary<string, string>> LoadAllLocales(string localeDirectory) {
@@ -228,7 +222,6 @@ namespace BigSausage.IO {
 					Logging.Debug($"Loading linkables for guild \"{guild.Name}\" ({guild.Id})...");
 					string dir = Utils.GetProcessPathDir() + "\\Files\\Guilds\\" + guild.Id + "\\Linkables\\";
 					AssertDirectoryExists(dir);
-					CheckForLegacyLinkablesAndConvert(guild);
 					string[] files = Directory.GetFiles(dir);
 					XmlSerializer serializer = new(typeof(Linkable));
 					List<Linkable> links = new();
@@ -267,6 +260,12 @@ namespace BigSausage.IO {
 			} else {
 				Logging.Critical("Client is null!");
 				return ret;
+			}
+		}
+
+		public static void MigrateLegacyLinkables() {
+			foreach (IGuild guild in BigSausage.GetClient().Guilds) {
+				CheckForLegacyLinkablesAndConvert(guild);
 			}
 		}
 

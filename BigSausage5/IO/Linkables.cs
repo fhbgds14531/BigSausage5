@@ -15,17 +15,18 @@ namespace BigSausage.IO {
 
 		public static void Initialize() {
 			if (!_initialized) {
+				_initialized = true;
 				Logging.Info("Initializing Linkables...");
 				_linkables = IO.IOUtilities.LoadLinkablesFromDisk(BigSausage.GetClient());
-
+				IO.IOUtilities.MigrateLegacyLinkables();
+				Save();
 
 			} else {
 				Logging.Warning("Linkable initialization was requested but linkables have already been initialized! ignoring...");
 			}
-			_initialized = true;
 		}
 
-		public static void AddLinkableToGuild(IGuild guild, Linkable linkable) {
+		public static void AddLinkableToGuildAndSave(IGuild guild, Linkable linkable) {
 			if (!_initialized) {
 				Logging.Warning("Adding a Linkable was requested but Linkables have not yet been initialized!");
 				Initialize();
@@ -33,6 +34,18 @@ namespace BigSausage.IO {
 			if (_linkables != null) {
 				_linkables[guild.Id].Add(linkable);
 				IO.IOUtilities.SaveLinkablesToDisk(BigSausage.GetClient(), _linkables);
+			} else {
+				Logging.Critical("Linkables have been initialized but are still null!");
+			}
+		}
+
+		public static void AddLinkableToGuildNoSave(IGuild guild, Linkable linkable) {
+			if (!_initialized) {
+				Logging.Warning("Adding a Linkable was requested but Linkables have not yet been initialized!");
+				Initialize();
+			}
+			if (_linkables != null) {
+				_linkables[guild.Id].Add(linkable);
 			} else {
 				Logging.Critical("Linkables have been initialized but are still null!");
 			}
@@ -175,7 +188,7 @@ namespace BigSausage.IO {
 			Logging.Info($"{stringType} upload request from guild \"{guild.Name}\" ({guildID}) accepted! Downloading {attachment.Filename} to disk...");
 			IO.IOUtilities.DownloadFile(attachment.Url, filename);
 			Linkable lkb = new(lName, guildID, filename, type, triggerStrings);
-			AddLinkableToGuild(guild, lkb);
+			AddLinkableToGuildAndSave(guild, lkb);
 			Logging.Debug("Attachment downloaded and added!");
 			return $"Successfully added {lName}!";
 		}
@@ -208,7 +221,7 @@ namespace BigSausage.IO {
 				filename = Utils.GetProcessPathDir() + $"\\Files\\Guilds\\{guildID}\\Linkables\\{(type == EnumLinkableType.Audio ? "Audio" : "Images")}\\" + filename;
 				File.Move(path, filename);
 
-				AddLinkableToGuild(guild, new Linkable(name, guildID, filename, (EnumLinkableType) type, triggers));
+				AddLinkableToGuildNoSave(guild, new Linkable(name, guildID, filename, (EnumLinkableType) type, triggers));
 				Logging.Warning("Legacy linkable migrated!");
 			}
 		}
