@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
@@ -12,33 +13,28 @@ namespace BigSausage {
 		private static readonly string LogFileName = DateTime.Now.ToString().Replace("/", ".").Replace(":", ".") + " Log.txt";
 		private static readonly string LogPath = Utils.GetProcessPathDir() + "\\Files\\Logging";
 
-		[Obsolete("Use one of the specific methods instead!")]
-		public static void Log(string message, LogSeverity severity) {
-			Log(new LogMessage(severity, "BigSausage", message));
+		public static void Debug(string message, [CallerMemberName] string memberName = "@", [CallerFilePath] string callerPath = "@") {
+			Log(new LogMessage(LogSeverity.Debug, callerPath.Substring(callerPath.LastIndexOf(@"\") + 1).Replace(".cs", ""), $"[{memberName}] {message}"));
 		}
 
-		public static void Debug(string message) {
-			Log(new LogMessage(LogSeverity.Debug, "BigSausage", message));
+		public static void Info(string message, [CallerMemberName] string memberName = "@", [CallerFilePath] string callerPath = "@") {
+			Log(new LogMessage(LogSeverity.Info, callerPath.Substring(callerPath.LastIndexOf(@"\") + 1).Replace(".cs", ""), $"[{memberName}] {message}"));
 		}
 
-		public static void Info(string message) {
-			Log(new LogMessage(LogSeverity.Info, "BigSausage", message));
+		public static void Verbose(string message, [CallerMemberName] string memberName = "@", [CallerFilePath] string callerPath = "@") {
+			Log(new LogMessage(LogSeverity.Verbose, callerPath.Substring(callerPath.LastIndexOf(@"\") + 1).Replace(".cs", ""), $"[{memberName}] {message}"));
 		}
 
-		public static void Verbose(string message) {
-			Log(new LogMessage(LogSeverity.Verbose, "BigSausage", message));
+		public static void Warning(string message, [CallerMemberName] string memberName = "@", [CallerFilePath] string callerPath = "@") {
+			Log(new LogMessage(LogSeverity.Warning, callerPath.Substring(callerPath.LastIndexOf(@"\") + 1).Replace(".cs", ""), $"[{memberName}] {message}"));
 		}
 
-		public static void Warning(string message) {
-			Log(new LogMessage(LogSeverity.Warning, "BigSausage", message));
+		public static void Critical(string message, [CallerMemberName] string memberName = "@", [CallerFilePath] string callerPath = "@") {
+			Log(new LogMessage(LogSeverity.Critical, callerPath.Substring(callerPath.LastIndexOf(@"\") + 1).Replace(".cs", ""), $"[{memberName}] {message}"));
 		}
 
-		public static void Critical(string message) {
-			Log(new LogMessage(LogSeverity.Critical, "BigSausage", message));
-		}
-
-		public static void Error(string message) {
-			Log(new LogMessage(LogSeverity.Error, "BigSausage", message));
+		public static void Error(string message, [CallerMemberName] string memberName = "@", [CallerFilePath] string callerPath = "@") {
+			Log(new LogMessage(LogSeverity.Error, callerPath.Substring(callerPath.LastIndexOf(@"\") + 1).Replace(".cs", ""), $"[{memberName}] {message}"));
 		}
 
 		public static Task Log(LogMessage msg) {

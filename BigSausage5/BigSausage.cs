@@ -105,30 +105,38 @@ namespace BigSausage {
 		}
 
 		private async Task BotReady() {
+			var start = DateTime.Now;
 			if(_commandHandler != null) await _commandHandler.InitGlobalSlashCommands(_client);
 			if(_client == null) return; 
 
 			foreach (IGuild guild in _client.Guilds) {
 				ulong guildId = guild.Id;
 				string guildName = guild.Name;
+				Logging.Verbose("========================================================");
 				Logging.Info("Setting up guild " + guildId + " (" + guildName + ")...");
 				string guildFilePath = Utils.GetProcessPathDir() + "\\Files\\Guilds\\" + guildId;
 
+				Logging.Verbose("========================================================");
 				Logging.Verbose("Asserting guild directory...");
 				IO.IOUtilities.AssertDirectoryExists(guildFilePath);
 
+				Logging.Verbose("========================================================");
 				Logging.Verbose("Asserting guild name file...");
 				IO.IOUtilities.AssertFileExists(guildFilePath, "." + guildName);
 
+				Logging.Verbose("========================================================");
 				Logging.Verbose("Asserting guild image directory...");
 				IO.IOUtilities.AssertDirectoryExists(guildFilePath + "\\Linkables\\Images");
 
+				Logging.Verbose("========================================================");
 				Logging.Verbose("Asserting guild audio directory...");
 				IO.IOUtilities.AssertDirectoryExists(guildFilePath + "\\Linkables\\Audio");
 
+				Logging.Verbose("========================================================");
 				Logging.Verbose("Asserting guild TTS file...");
 				IO.IOUtilities.AssertFileExists(guildFilePath, "TTS.txt");
-				
+
+				Logging.Verbose("========================================================");
 				Logging.Verbose("Asserting guild localization selection file...");
 				IO.IOUtilities.AssertFileExists(guildFilePath, "selected_locale.bs");
 				string[] contents = File.ReadAllLines(guildFilePath + "\\selected_locale.bs");
@@ -137,13 +145,22 @@ namespace BigSausage {
 					contents = new string[]{ "en_US" };
 					File.WriteAllText(guildFilePath + "\\selected_locale.bs", contents[0]);
 				}
+				Logging.Verbose("========================================================");
 
-				
+
 			}
+			Logging.Verbose("========================================================");
 			Logging.Verbose("Asserting permissions initialization...");
 			Permissions.Permissions.Initialize();
+			Logging.Verbose("========================================================");
 			Logging.Verbose("Asserting Linkables initialization...");
 			IO.Linkables.Initialize();
+			Logging.Verbose("========================================================");
+
+			var end = DateTime.Now;
+			var diff = end.Subtract(start);
+			Logging.Info($"Initialization sequence complete in {diff.TotalSeconds} seconds!");
+
 			foreach(string s in Utils.GetASCIILogo()) {
 				Logging.Info(s);
 			}

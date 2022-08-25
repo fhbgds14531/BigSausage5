@@ -14,6 +14,7 @@ namespace BigSausage.IO {
 		private static bool _initialized = false;
 
 		public static void Initialize() {
+			var start = DateTime.Now;
 			if (!_initialized) {
 				_initialized = true;
 				Logging.Info("Initializing Linkables...");
@@ -24,6 +25,9 @@ namespace BigSausage.IO {
 			} else {
 				Logging.Warning("Linkable initialization was requested but linkables have already been initialized! ignoring...");
 			}
+			var end = DateTime.Now;
+			var diff = end.Subtract(start);
+			Logging.Info($"Linkable initialization complete in {diff.TotalSeconds} seconds!");
 		}
 
 		public static void AddLinkableToGuildAndSave(IGuild guild, Linkable linkable) {

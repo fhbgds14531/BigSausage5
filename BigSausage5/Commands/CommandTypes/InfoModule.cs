@@ -206,7 +206,7 @@ namespace BigSausage.Commands.CommandTypes {
 			var end = DateTime.Now;
 
 			var diff = end.Subtract(start);
-			Logging.Debug($"Executed stats command in {diff.ToString()}");
+			Logging.Debug($"Executed stats command in {diff.TotalSeconds} seconds.");
 			await Utils.ReplyToMessageFromCommand(Context, result);
 		}
 
