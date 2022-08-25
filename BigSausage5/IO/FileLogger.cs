@@ -32,10 +32,6 @@ namespace BigSausage.IO {
 			_queue[filePath].Add(line);
 		}
 
-		private void ClearQueue() {
-			_queue = new();
-		}
-
 		int MaxRetries = 10;
 		int DelayOnRetry = 25;
 		private async Task WriteQueuedLinesToFile() {
@@ -55,7 +51,6 @@ namespace BigSausage.IO {
 					}
 				}
 			}
-			ClearQueue();
 		}
 
 	}
