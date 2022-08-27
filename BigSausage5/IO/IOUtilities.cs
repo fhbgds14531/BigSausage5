@@ -57,11 +57,17 @@ namespace BigSausage.IO {
 			return false;
 		}
 
-		public static bool WriteLineToFile(string line, string path, string filename) {
-			if (_fileLogger == null) _fileLogger = new FileLogger();
-			_fileLogger.AddLineToQueue(path + "\\" + filename, line);
+		public static bool WriteLineToFile(string line, string dir, string filename) {
+			if (_fileLogger == null) _fileLogger = new();
+			_fileLogger.AddLineToQueue(dir + "\\" + filename, line);
 			return true;
 		
+		}
+
+		public static bool AppendLineToFile(string line, string path) {
+			if (_fileLogger == null) _fileLogger = new();
+			_fileLogger.AddLineToQueue(path, line);
+			return true;
 		}
 
 		public static Dictionary<string, Dictionary<string, string>> LoadAllLocales(string localeDirectory) {

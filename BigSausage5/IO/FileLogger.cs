@@ -15,7 +15,7 @@ namespace BigSausage.IO {
 			Console.WriteLine("Initializing FileLogger...");
 			this._queue = new();
 			this._writeQueue = new();
-			Thread t = new Thread(Run);
+			Thread t = new(Run);
 			t.Name = "Text file line writing batcher";
 			t.Start();
 		}
@@ -25,6 +25,7 @@ namespace BigSausage.IO {
 				await WriteQueuedLinesToFile();
 				await Task.Delay(500);
 			}
+			await WriteQueuedLinesToFile();
 		}
 
 		public void AddLineToQueue(string filePath, string line) {

@@ -9,16 +9,17 @@ using BigSausage.Commands;
 using System.Reflection;
 using Discord;
 using Discord.Net;
+using BigSausage.IO;
 
 namespace BigSausage {
-	public class CommandHandler {
+	public class MessageHandler {
 
 		public static readonly string BOT_PREFIX = "!bs ";
 		private readonly DiscordSocketClient _client;
 		private readonly CommandService _commands;
 		private readonly List<SlashCommandBuilder> _slashCommandBuilders;
 
-		public CommandHandler(DiscordSocketClient client, CommandService commands) {
+		public MessageHandler(DiscordSocketClient client, CommandService commands) {
 			Logging.Info("Initializing CommandHandler...");
 			_client = client;
 			_commands = commands;
@@ -75,14 +76,23 @@ namespace BigSausage {
 		public async Task HandleCommandsAsync(SocketMessage messageParam) {
 			if (messageParam is not SocketUserMessage message) return;
 			int argPos = 0;
-
-			if ((!message.HasStringPrefix(BOT_PREFIX, ref argPos, StringComparison.OrdinalIgnoreCase) || message.Author.IsBot)) return;
-
-			Logging.Debug("Recieved a command! \"" + message.Content + "\"");
-
 			var context = new SocketCommandContext(_client, message);
-			await _commands.ExecuteAsync(context, argPos, null, MultiMatchHandling.Exception);
-			Logging.Debug("Command execution finished.");
+
+			if ((!message.HasStringPrefix(BOT_PREFIX, ref argPos, StringComparison.OrdinalIgnoreCase))){
+				if(message.Author.IsBot) return;
+				Logging.Debug("Message is not a command! Scanning for triggers...");
+				List<Linkable> linkables = Linkables.ScanMessageForLinkableTriggers(context.Guild, context.Message.Author, context.Message.Content);
+				if (linkables.Count == 0) return;
+				ITextChannel textChannel = (ITextChannel) context.Channel;
+				IGuildUser? user = context.User as IGuildUser;
+				if (user != null) {
+					IVoiceChannel? channel = user.VoiceChannel;
+					Linkables.SendLinkables(linkables, textChannel, channel);
+				}
+
+				return;
+			}
+			Auditor.LogCommandFinished(context, await _commands.ExecuteAsync(context, argPos, null, MultiMatchHandling.Best));
 		}
 	}
 }

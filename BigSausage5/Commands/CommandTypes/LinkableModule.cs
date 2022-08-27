@@ -12,15 +12,11 @@ namespace BigSausage.Commands.CommandTypes {
 	public class LinkableModule : ModuleBase<SocketCommandContext> {
 		
 		[Command("list")]
-		public async Task List([Remainder] params string[] type) {
+		public async Task List([Remainder] string type = "") {
 			Logging.Debug("Listing files...");
 			bool listImages = false;
 			bool listAudio = false;
-			if (type == null || type.Length == 0) {
-				Logging.Debug("List type was null!");
-				type = new string[] { "all" };
-			}
-			switch (type[0]) {
+			switch (type) {
 				case "":
 				case "all":
 				case null:

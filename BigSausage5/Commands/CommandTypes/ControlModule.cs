@@ -22,7 +22,7 @@ namespace BigSausage.Commands.CommandTypes {
 			int tooOldCount = 0;
 			foreach (IMessage message in grabbed) {
 				if (message != null) {
-					if (message.Content.StartsWith(CommandHandler.BOT_PREFIX) || message.Author.Id == BigSausage.GetClient().CurrentUser.Id) {
+					if (message.Content.StartsWith(MessageHandler.BOT_PREFIX) || message.Author.Id == BigSausage.GetClient().CurrentUser.Id) {
 						if (message.Timestamp > DateTime.UtcNow.Subtract(TimeSpan.FromDays(14))) {
 							messagesToDelete.Add(message);
 						} else {

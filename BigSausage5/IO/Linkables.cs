@@ -101,15 +101,17 @@ namespace BigSausage.IO {
 
 		}
 
-		public static List<Linkable> ScanMessageForLinkableTriggers(IGuild guild, string message) {
+		public static List<Linkable> ScanMessageForLinkableTriggers(IGuild guild, IUser author, string message) {
 			if (!_initialized) {
 				Logging.Warning("Trigger parsing was requested but Linkables have not yet been initialized!");
 				Initialize();
 			}
+			Logging.Debug("Scanning message for triggers...");
 			if(_linkables != null) {
 				List<Linkable> result = new();
 				string[] split = message.Split(' ');
 				foreach (string word in split) {
+					Logging.Debug(word);
 					foreach (Linkable linkable in _linkables[guild.Id]) {
 						if (linkable.Triggers == null) {
 							Logging.Error("Triggers for linkable are null! " + linkable.Name);
@@ -123,10 +125,32 @@ namespace BigSausage.IO {
 						}
 					}
 				}
+				Logging.Debug($"Found {result.Count} linkable(s) matching words in this message!");
 				return result;
 			} else {
 				Logging.Critical("Linkables were initialized but are still null!");
 				return new();
+			}
+		}
+
+		public async static void SendLinkables(List<Linkable> linkables, ITextChannel textChannel, IVoiceChannel? voiceChannel) {
+			Logging.Debug($"Attempting to send {linkables.Count} linkable(s)...");
+			bool doVoice = voiceChannel != null;
+			Logging.Debug($"User is {(doVoice ? "" : "not")} in a voice channel.");
+			foreach (Linkable linkable in linkables) {
+				if(linkable.type == EnumLinkableType.Audio) {
+					if (doVoice) {
+
+						continue;
+					} else {
+						Logging.Debug("Skipped sending an audio linkable!");
+					}
+				}
+				if(linkable.type == EnumLinkableType.Image) {
+					Logging.Debug("Sending image...");
+					await textChannel.SendFileAsync(linkable.Filename);
+					continue;
+				}
 			}
 		}
 

@@ -12,7 +12,7 @@ namespace BigSausage {
 		private static readonly string TOKEN = "BigSausageDEBUG.token";
 		private static Process? _process;
 		private static DiscordSocketClient? _client;
-		private static CommandHandler? _commandHandler;
+		private static MessageHandler? _commandHandler;
 		private static Localization.Localization? _localizationManager;
 		private static TaskCompletionSource<bool>? _shutdownTask;
 		private static DateTime _startTime;
@@ -38,7 +38,7 @@ namespace BigSausage {
 
 			CommandService commandService = new(config);
 
-			_commandHandler = new CommandHandler(_client, commandService);
+			_commandHandler = new MessageHandler(_client, commandService);
 
 			_client.SlashCommandExecuted += _commandHandler.HandleSlashCommandsAsync;
 
