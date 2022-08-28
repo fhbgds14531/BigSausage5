@@ -1,17 +1,11 @@
 ﻿using BigSausage.IO;
 using Discord;
 using Discord.Commands;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace BigSausage.Commands.CommandTypes {
 	public class LinkableModule : ModuleBase<SocketCommandContext> {
-		
-		[Command("list")]
+
+		[Command("list", RunMode = RunMode.Async)]
 		public async Task List([Remainder] string type = "") {
 			Logging.Debug("Listing files...");
 			bool listImages = false;
@@ -47,7 +41,7 @@ namespace BigSausage.Commands.CommandTypes {
 
 			Logging.Debug("Getting linkables for listing...");
 			List<Linkable> linkables = Linkables.GetLinkablesForGuild(Context.Guild);
-			if(linkables != null && linkables.Count > 0) {
+			if (linkables != null && linkables.Count > 0) {
 				foreach (Linkable linkable in linkables) {
 					if (linkable.type == EnumLinkableType.Image && listImages) {
 						if (linkable.Name != null) {
@@ -95,19 +89,49 @@ namespace BigSausage.Commands.CommandTypes {
 		}
 
 
-		[Command("image")]
+		public async Task Remove(string name) {
+			if (name != null) {
+				if (Permissions.Permissions.GetUserPermissionLevelInGuild(Context.Guild, Context.User) >= Permissions.EnumPermissionLevel.High) {
+					List<Linkable> linkables = Linkables.GetLinkablesByNameOrTrigger(Context.Guild, name);
+
+				}
+			}
+		}
+
+
+		[Command("image", RunMode = RunMode.Async)]
 		public async Task Image([Remainder] string names = "") {
 			Logging.Verbose("Image requested!");
 			List<Linkable> links = new();
 			if (names != null && names.Length > 0) {
 				Logging.Verbose($"Image linker has been provided with the following string: {names}");
-				foreach (string name in names.Split(" ")) {
-					Linkables.GetLinkablesByNameOrTrigger(Context.Guild, name).ForEach(linkable => links.Add(linkable));
+
+				int i = 0;
+				if (int.TryParse(names, out i)) {
+					Logging.Debug("String is an integer!");
+					if (i > 0) {
+						List<Linkable> images = Linkables.GetLinkablesOfTypeForGuild(Context.Guild, EnumLinkableType.Image);
+						Random rand = new();
+						for (int count = 0; count < i; count++) {
+							Logging.Debug("Getting a random image...");
+							int index = rand.Next(images.Count) - 1;
+							Linkable image = images[index];
+							images.Remove(image);
+							links.Add(image);
+						}
+					} else {
+						await Utils.ReplyToMessageFromCommand(Context, "When providing a number, the number must be a positive integer.");
+						return;
+					}
+				} else {
+					foreach (string name in names.Split(" ")) {
+						links.AddRange(Linkables.GetLinkablesOfTypeByNameOrTrigger(Context.Guild, name, EnumLinkableType.Image));
+					}
+					Logging.Verbose($"Linkable search resulted in {links.Count} match{(links.Count == 1 ? "" : "es")}!");
 				}
-				Logging.Verbose($"Linkable search resulted in {links.Count} match{(links.Count == 1 ? "" : "es")}!");
 			} else {
 				Logging.Verbose("Image linker was not provided with a query, it will instead choose a random image...");
-				List<Linkable> guildLinks = Linkables.GetLinkablesForGuild(Context.Guild);
+				List<Linkable> guildLinks = Linkables.GetLinkablesOfTypeForGuild(Context.Guild, EnumLinkableType.Image);
 				links.Add(guildLinks[new Random().Next(guildLinks.Count)]);
 			}
 			foreach (Linkable linkable in links) {
@@ -118,19 +142,62 @@ namespace BigSausage.Commands.CommandTypes {
 			await Task.CompletedTask;
 		}
 
-		[Command("voice")]
-		public async Task Voice([Remainder] string names) {
+		[Command("voice", RunMode = RunMode.Async)]
+		public async Task Voice([Remainder] string names = "") {
+			Logging.Verbose("Audio requested!");
+			List<Linkable> links = new();
 			if (names != null && names.Length > 0) {
-
+				Logging.Verbose($"Audio linker has been provided with the following string: {names}");
+				int i = 0;
+				if (int.TryParse(names, out i)) {
+					Logging.Debug("String is an integer!");
+					if (i > 0) {
+						List<Linkable> audio = Linkables.GetLinkablesOfTypeForGuild(Context.Guild, EnumLinkableType.Audio);
+						Random rand = new();
+						for (int count = 0; count < i; count++) {
+							int index = rand.Next(audio.Count) - 1;
+							Linkable clip = audio[index];
+							audio.Remove(clip);
+							links.Add(clip);
+						}
+					} else {
+						await Utils.ReplyToMessageFromCommand(Context, "When providing a number, the number must be a positive integer.");
+						return;
+					}
+				} else {
+					foreach (string name in names.Split(" ")) {
+						links.AddRange(Linkables.GetLinkablesOfTypeByNameOrTrigger(Context.Guild, name, EnumLinkableType.Audio));
+					}
+				}
+				Logging.Verbose($"Linkable search resulted in {links.Count} match{(links.Count == 1 ? "" : "es")}!");
+			} else {
+				Logging.Verbose("Audio linker was not provided with a query, it will instead choose a random clip...");
+				List<Linkable> guildLinks = Linkables.GetLinkablesOfTypeForGuild(Context.Guild, EnumLinkableType.Audio);
+				links.Add(guildLinks[new Random().Next(guildLinks.Count)]);
 			}
+			Logging.Debug("Attempting to send audio...");
+			IVoiceChannel channel = AudioManager.GetVoiceChannelFromSocketUser(Context.User);
+			foreach (Linkable linkable in links) {
+				if (linkable.Filename != null) {
+					BigSausage.GetAudioManager().AddClipToQueue(Context.Guild, linkable.Filename);
+				}
+			}
+			Logging.Debug("Playing queued files...");
+			await BigSausage.GetAudioManager().SafePlayFiles(Context.Guild, channel);
 			await Task.CompletedTask;
 		}
 
 		[Command("upload")]
 		public async Task Upload([Remainder] string triggerStrings = "") {
-			await Utils.ReplyToMessageFromCommand(Context, Linkables.HandleUpload(Context.Guild, Context.Message.Attachments.ToArray(), Context.Message.Author, 
-				triggerStrings.Split("")));
+			bool alreadyExists = false;
 
+			if (alreadyExists) {
+				await Utils.ReplyToMessageFromCommand(Context, "A linkable with that name already exists! Please try again with a different filename.");
+				return;
+			} else {
+				await Utils.ReplyToMessageFromCommand(Context, Linkables.HandleUpload(Context.Guild, Context.Message.Attachments.ToArray(), Context.Message.Author,
+					triggerStrings.Split("")));
+			}
 
 		}
 

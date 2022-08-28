@@ -1,11 +1,7 @@
 ﻿using BigSausage.Commands;
 using Discord;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace BigSausage.IO {
 	internal class Linkables {
@@ -13,45 +9,55 @@ namespace BigSausage.IO {
 		private static SerializableDictionary<ulong, List<Linkable>>? _linkables;
 		private static bool _initialized = false;
 
+		[MemberNotNull(nameof(_linkables))]
 		public static void Initialize() {
 			var start = DateTime.Now;
-			if (!_initialized) {
-				_initialized = true;
-				Logging.Info("Initializing Linkables...");
-				_linkables = IO.IOUtilities.LoadLinkablesFromDisk(BigSausage.GetClient());
-				IO.IOUtilities.MigrateLegacyLinkables();
-				Save();
-
-			} else {
-				Logging.Warning("Linkable initialization was requested but linkables have already been initialized! ignoring...");
-			}
+			_initialized = true;
+			Logging.Info("Initializing Linkables...");
+			_linkables = IO.IOUtilities.LoadLinkablesFromDisk(BigSausage.GetClient());
+			IO.IOUtilities.MigrateLegacyLinkables();
+			Save();
 			var end = DateTime.Now;
 			var diff = end.Subtract(start);
 			Logging.Info($"Linkable initialization complete in {diff.TotalSeconds} seconds!");
 		}
 
-		public static void AddLinkableToGuildAndSave(IGuild guild, Linkable linkable) {
+		public static bool AddLinkableToGuildAndSave(IGuild guild, Linkable linkable) {
 			if (!_initialized) {
 				Logging.Warning("Adding a Linkable was requested but Linkables have not yet been initialized!");
 				Initialize();
 			}
 			if (_linkables != null) {
+				bool alreadyExists = false;
+				foreach (Linkable l in _linkables[guild.Id]) {
+					if (l.Name == linkable.Name) alreadyExists = true;
+				}
+				if (alreadyExists) return false;
 				_linkables[guild.Id].Add(linkable);
 				IO.IOUtilities.SaveLinkablesToDisk(BigSausage.GetClient(), _linkables);
+				return true;
 			} else {
 				Logging.Critical("Linkables have been initialized but are still null!");
+				return false;
 			}
 		}
 
-		public static void AddLinkableToGuildNoSave(IGuild guild, Linkable linkable) {
+		public static bool AddLinkableToGuildNoSave(IGuild guild, Linkable linkable) {
 			if (!_initialized) {
 				Logging.Warning("Adding a Linkable was requested but Linkables have not yet been initialized!");
 				Initialize();
 			}
 			if (_linkables != null) {
+				bool alreadyExists = false;
+				foreach (Linkable l in _linkables[guild.Id]) {
+					if (l.Name == linkable.Name) alreadyExists = true;
+				}
+				if (alreadyExists) return false;
 				_linkables[guild.Id].Add(linkable);
+				return true;
 			} else {
 				Logging.Critical("Linkables have been initialized but are still null!");
+				return false;
 			}
 		}
 
@@ -62,6 +68,30 @@ namespace BigSausage.IO {
 			} else {
 				Logging.Warning("Linkables were never properly initialized, so they will not be saved.");
 			}
+		}
+
+		public static List<Linkable> GetLinkablesOfTypeForGuild(IGuild guild, EnumLinkableType type) {
+			if (!_initialized) {
+				Logging.Warning($"Linkables for guild \"{guild.Name}\"({guild.Id}) requested but linkables have not been initialized!");
+				Initialize();
+			}
+			if (_linkables == null) {
+				IOException e = new("Linkables initialization failed!");
+				Logging.LogException(e, "_linkables was null post initialization!");
+				_linkables = new();
+			}
+			List<Linkable> linkables = new();
+
+			if (_linkables.ContainsKey(guild.Id)) {
+				foreach (Linkable linkable in _linkables[guild.Id]) {
+					if (linkable.type == type) linkables.Add(linkable);
+				}
+			} else {
+				Logging.Error($"Linkables is missing an entry for guild \"{guild.Name}\"({guild.Id})! Adding an empty entry...");
+				_linkables[guild.Id] = new();
+			}
+
+			return linkables;
 		}
 
 		public static List<Linkable> GetLinkablesForGuild(IGuild guild) {
@@ -86,6 +116,37 @@ namespace BigSausage.IO {
 			return linkables;
 		}
 
+		public static List<Linkable> GetLinkablesOfTypeByNameOrTrigger(IGuild guild, string nameOrTrigger, EnumLinkableType type) {
+			Logging.Verbose($"Checking guild \"{guild.Name}\" ({guild.Id}) for linkables using key \"{nameOrTrigger}\"");
+			List<Linkable> result = new();
+			if (!_initialized) {
+				Logging.Warning("Linkable requested but linkables have not yet been initialized!");
+				Initialize();
+			}
+			if (_linkables != null) {
+				List<Linkable> filtered = new();
+				foreach (Linkable l in _linkables[guild.Id]) {
+					if (l.type == type) filtered.Add(l);
+				}
+				filtered.ForEach(linkable => { if (linkable.Triggers.Contains(nameOrTrigger) || linkable.Name == nameOrTrigger) result.Add(linkable); });
+			}
+			Logging.Verbose($"Found {(result.Count == 1 ? (result.Count + " linkable") : result.Count + " linkables")}!");
+			return result;
+		}
+
+		public static List<Linkable> GetLinkableByName(IGuild guild, string name) {
+			Logging.Verbose($"Checking guild \"{guild.Name}\" ({guild.Id}) for linkables using key \"{name}\"");
+			List<Linkable> result = new();
+			if (!_initialized) {
+				Logging.Warning("Linkable requested but linkables have not yet been initialized!");
+				Initialize();
+			}
+			if (_linkables != null) {
+				_linkables[guild.Id].ForEach(linkable => { if (linkable.Name == name) result.Add(linkable); });
+			}
+			return result;
+		}
+
 		public static List<Linkable> GetLinkablesByNameOrTrigger(IGuild guild, string nameOrTrigger) {
 			Logging.Verbose($"Checking guild \"{guild.Name}\" ({guild.Id}) for linkables using key \"{nameOrTrigger}\"");
 			List<Linkable> result = new();
@@ -93,12 +154,22 @@ namespace BigSausage.IO {
 				Logging.Warning("Linkable requested but linkables have not yet been initialized!");
 				Initialize();
 			}
-			if(_linkables != null) {
-				_linkables[guild.Id].ForEach(linkable => { if (linkable.Triggers.Contains(nameOrTrigger) || linkable.Name == nameOrTrigger) result.Add(linkable);});
+			if (_linkables != null) {
+				_linkables[guild.Id].ForEach(linkable => { if (linkable.Triggers.Contains(nameOrTrigger) || linkable.Name == nameOrTrigger) result.Add(linkable); });
 			}
 			Logging.Verbose($"Found {(result.Count == 1 ? (result.Count + " linkable") : result.Count + " linkables")}!");
 			return result;
+		}
 
+		public static bool LinkableAlreadyExists(IGuild guild, string name) {
+			if (!_initialized) {
+				Logging.Warning("Linkables have not yet been initialized!");
+				Initialize();
+			}
+			foreach (Linkable linkable in _linkables[guild.Id]) {
+				if (linkable.Name == name) return true;
+			}
+			return false;
 		}
 
 		public static List<Linkable> ScanMessageForLinkableTriggers(IGuild guild, IUser author, string message) {
@@ -107,7 +178,7 @@ namespace BigSausage.IO {
 				Initialize();
 			}
 			Logging.Debug("Scanning message for triggers...");
-			if(_linkables != null) {
+			if (_linkables != null) {
 				List<Linkable> result = new();
 				string[] split = message.Split(' ');
 				foreach (string word in split) {
@@ -133,12 +204,12 @@ namespace BigSausage.IO {
 			}
 		}
 
-		public async static void SendLinkables(List<Linkable> linkables, ITextChannel textChannel, IVoiceChannel? voiceChannel) {
+		public static async void SendLinkables(List<Linkable> linkables, ITextChannel textChannel, IVoiceChannel? voiceChannel) {
 			Logging.Debug($"Attempting to send {linkables.Count} linkable(s)...");
 			bool doVoice = voiceChannel != null;
 			Logging.Debug($"User is {(doVoice ? "" : "not")} in a voice channel.");
 			foreach (Linkable linkable in linkables) {
-				if(linkable.type == EnumLinkableType.Audio) {
+				if (linkable.type == EnumLinkableType.Audio) {
 					if (doVoice) {
 
 						continue;
@@ -146,7 +217,7 @@ namespace BigSausage.IO {
 						Logging.Debug("Skipped sending an audio linkable!");
 					}
 				}
-				if(linkable.type == EnumLinkableType.Image) {
+				if (linkable.type == EnumLinkableType.Image) {
 					Logging.Debug("Sending image...");
 					await textChannel.SendFileAsync(linkable.Filename);
 					continue;
@@ -237,7 +308,7 @@ namespace BigSausage.IO {
 					Logging.Warning("File is not a valid linkable, it will be skipped!");
 					return;
 			}
-			if(type != null) {
+			if (type != null) {
 				string filename = path.Substring(path.LastIndexOf(@"\") + 1);
 				string guildID = path.Replace(@"\" + filename, "");
 				guildID = guildID.Substring(guildID.LastIndexOf(@"\") + 1);
@@ -249,7 +320,7 @@ namespace BigSausage.IO {
 				filename = Utils.GetProcessPathDir() + $"\\Files\\Guilds\\{guildID}\\Linkables\\{(type == EnumLinkableType.Audio ? "Audio" : "Images")}\\" + filename;
 				File.Move(path, filename);
 
-				AddLinkableToGuildNoSave(guild, new Linkable(name, guildID, filename, (EnumLinkableType) type, triggers));
+				AddLinkableToGuildNoSave(guild, new Linkable(name, guildID, filename, (EnumLinkableType)type, triggers));
 				Logging.Warning("Legacy linkable migrated!");
 			}
 		}
@@ -274,11 +345,11 @@ namespace BigSausage.IO {
 
 		private static EnumAttachmentValidation ValidateLegacyFile(string path) {
 			Logging.Warning("Validating legacy file...");
-			if (!File.Exists(path))  return EnumAttachmentValidation.InvalidType;
+			if (!File.Exists(path)) return EnumAttachmentValidation.InvalidType;
 			if (new FileInfo(path).Length > 4_999_999) return EnumAttachmentValidation.InvalidSize;
 
-			if (path.ToLower().EndsWith(".wav")) return EnumAttachmentValidation.ValidWav; 
-			
+			if (path.ToLower().EndsWith(".wav")) return EnumAttachmentValidation.ValidWav;
+
 			Regex images = new(@"(.+\.(jpg|jpeg|png|bmp|gif))$");
 			if (images.IsMatch(path)) return EnumAttachmentValidation.ValidImage;
 			return EnumAttachmentValidation.InvalidType;

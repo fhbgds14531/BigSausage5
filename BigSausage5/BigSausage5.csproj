@@ -40,4 +40,8 @@
     </EmbeddedResource>
   </ItemGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="xcopy /y $(ProjectDir)packages\ffmpeg-5.1-full_build\bin\ffmpeg.exe $(TargetDir)" />
+  </Target>
+
 </Project>

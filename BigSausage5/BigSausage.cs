@@ -1,4 +1,4 @@
-﻿using BigSausage.Commands;
+﻿using BigSausage.IO;
 using BigSausage.Localization;
 using Discord;
 using Discord.Commands;
@@ -7,189 +7,188 @@ using System.Diagnostics;
 
 namespace BigSausage {
 
-	public class BigSausage {
+    public class BigSausage {
 
-		private static readonly string TOKEN = "BigSausageDEBUG.token";
-		private static Process? _process;
-		private static DiscordSocketClient? _client;
-		private static MessageHandler? _commandHandler;
-		private static Localization.Localization? _localizationManager;
-		private static TaskCompletionSource<bool>? _shutdownTask;
-		private static DateTime _startTime;
+        private static readonly string TOKEN = "BigSausageDEBUG.token";
+        private static Process _process = null!;
+        private static DiscordSocketClient _client = null!;
+        private static MessageHandler _commandHandler = null!;
+        private static AudioManager _audioManager = null!;
+        private static LocalizationManager? _localizationManager;
+        private static TaskCompletionSource<bool> _shutdownTask = null!;
+        private static DateTime _startTime;
 
-		public BigSausage() {
-			_startTime = DateTime.Now;
-			_process = Process.GetCurrentProcess();
-			Logging.Info($"Launching BigSausage v{typeof(BigSausage).Assembly.GetName().Version}");
-			DiscordSocketConfig discordSocketConfig = new() {
-				GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers
-			};
-
-
-			_client = new DiscordSocketClient(discordSocketConfig);
-			_client.Log += Logging.Log;
-			_client.Ready += BotReady;
+        public BigSausage() {
+            _shutdownTask = new TaskCompletionSource<bool>();
+            _startTime = DateTime.Now;
+            _process = Process.GetCurrentProcess();
+            _audioManager = new AudioManager();
+            Logging.Info($"Launching BigSausage V ({typeof(BigSausage).Assembly.GetName().Version})");
+            DiscordSocketConfig discordSocketConfig = new() {
+                GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers
+            };
 
 
-			CommandServiceConfig config = new();
-			config.SeparatorChar = ' ';
-			config.CaseSensitiveCommands = false;
-			config.IgnoreExtraArgs = true;
-
-			CommandService commandService = new(config);
-
-			_commandHandler = new MessageHandler(_client, commandService);
-
-			_client.SlashCommandExecuted += _commandHandler.HandleSlashCommandsAsync;
-
-			_shutdownTask = new TaskCompletionSource<bool>();
-		}
-
-		public static Task Main() => new BigSausage().MainAsync();
+            _client = new DiscordSocketClient(discordSocketConfig);
+            _client.Log += Logging.Log;
+            _client.Ready += BotReady;
 
 
-		public static bool ShouldRun() {
-			if (_shutdownTask != null) {
-				return _shutdownTask.Task.Result;
-			} else {
-				return true;
-			}
-		}
+            CommandServiceConfig config = new();
+            config.SeparatorChar = ' ';
+            config.CaseSensitiveCommands = false;
+            config.IgnoreExtraArgs = true;
 
-		public async Task MainAsync() {
-			_process = Process.GetCurrentProcess();
-			if (_client != null) {
-				
-				await _client.LoginAsync(TokenType.Bot, File.ReadAllText(Utils.GetProcessPathDir() + "\\Files\\Tokens\\" + TOKEN));
-				if(_commandHandler != null) await _commandHandler.SetupAsync();
-				await _client.StartAsync();
+            CommandService commandService = new(config);
 
-				if (_shutdownTask != null) await _shutdownTask.Task;
-				await Shutdown();
-			}
+            _commandHandler = new MessageHandler(_client, commandService);
 
-		}
+            _client.SlashCommandExecuted += _commandHandler.HandleSlashCommandsAsync;
 
-		public static TimeSpan GetUptime() {
-			return DateTime.Now.Subtract(_startTime);
-		}
+        }
 
-		public static Process GetBotMainProcess() {
-			return _process ?? Process.GetCurrentProcess();
-		}
-
-		public static Task TimeToClose() {
-			if(_shutdownTask != null) _shutdownTask.SetResult(true);
-			return Task.CompletedTask;
-		}
-
-		private async static Task Shutdown(int code = 0) {
-			Logging.Info("Beginning shutdown sequence...");
-			IO.Linkables.Save();
-			if (_client != null) {
-				await _client.LogoutAsync();
-				Logging.Info("Logged out of discord.");
-			} else {
-				Logging.Verbose("Client is null so no need to log out.");
-			}
-			Logging.Info("Shutting Down...");
-			Permissions.Permissions.Save();
-			if (_client != null) {
-				await _client.StopAsync();
-				Logging.Info("Successfully stopped client!");
-			} else {
-				Logging.Info("Client is null so no need to stop.");
-			}
-			Logging.Info("Successfully shut down!");
-			Environment.Exit(code);
-		}
-
-		private async Task BotReady() {
-			var start = DateTime.Now;
-			if(_commandHandler != null) await _commandHandler.InitGlobalSlashCommands(_client);
-			if(_client == null) return; 
-
-			foreach (IGuild guild in _client.Guilds) {
-				ulong guildId = guild.Id;
-				string guildName = guild.Name;
-				Logging.Verbose("========================================================");
-				Logging.Info("Setting up guild " + guildId + " (" + guildName + ")...");
-				string guildFilePath = Utils.GetProcessPathDir() + "\\Files\\Guilds\\" + guildId;
-
-				Logging.Verbose("========================================================");
-				Logging.Verbose("Asserting guild directory...");
-				IO.IOUtilities.AssertDirectoryExists(guildFilePath);
-
-				Logging.Verbose("========================================================");
-				Logging.Verbose("Asserting guild name file...");
-				IO.IOUtilities.AssertFileExists(guildFilePath, "." + guildName);
-
-				Logging.Verbose("========================================================");
-				Logging.Verbose("Asserting guild image directory...");
-				IO.IOUtilities.AssertDirectoryExists(guildFilePath + "\\Linkables\\Images");
-
-				Logging.Verbose("========================================================");
-				Logging.Verbose("Asserting guild audio directory...");
-				IO.IOUtilities.AssertDirectoryExists(guildFilePath + "\\Linkables\\Audio");
-
-				Logging.Verbose("========================================================");
-				Logging.Verbose("Asserting guild TTS file...");
-				IO.IOUtilities.AssertFileExists(guildFilePath, "TTS.txt");
-
-				Logging.Verbose("========================================================");
-				Logging.Verbose("Asserting guild localization selection file...");
-				IO.IOUtilities.AssertFileExists(guildFilePath, "selected_locale.bs");
-				string[] contents = File.ReadAllLines(guildFilePath + "\\selected_locale.bs");
-				if (contents.Length == 0) {
-					Logging.Warning("Localization file for " + guildName + " (" + guildId + ") is empty! Defaulting to en_US");
-					contents = new string[]{ "en_US" };
-					File.WriteAllText(guildFilePath + "\\selected_locale.bs", contents[0]);
-				}
-				Logging.Verbose("========================================================");
+        public static Task Main() => new BigSausage().MainAsync();
 
 
-			}
-			Logging.Verbose("========================================================");
-			Logging.Verbose("Asserting permissions initialization...");
-			Permissions.Permissions.Initialize();
-			Logging.Verbose("========================================================");
-			Logging.Verbose("Asserting Linkables initialization...");
-			IO.Linkables.Initialize();
-			Logging.Verbose("========================================================");
+        public static AudioManager GetAudioManager() {
+            return _audioManager;
+        }
 
-			var end = DateTime.Now;
-			var diff = end.Subtract(start);
-			Logging.Info($"Initialization sequence complete in {diff.TotalSeconds} seconds!");
+        public static bool ShouldRun() {
+            if (_shutdownTask != null) {
+                return _shutdownTask.Task.Result;
+            } else {
+                return true;
+            }
+        }
 
-			foreach(string s in Utils.GetASCIILogo()) {
-				Logging.Info(s);
-			}
-			return;
-		}
+        public async Task MainAsync() {
+            _process = Process.GetCurrentProcess();
+            if (_client != null) {
 
-		public static Localization.Localization GetLocalizationManager(DiscordSocketClient client) {
-			if (_localizationManager == null) {
-				Logging.Warning("LocalizationManager was requested but has not yet been initialized! Initializing it now...");
-				long start = DateTime.Now.Ticks;
-				_localizationManager = new Localization.Localization(client);
-				long end = DateTime.Now.Ticks;
-				long duration = end - start;
-				duration /= System.TimeSpan.TicksPerSecond;
-				Logging.Warning("Finished initializing localization in " + duration.ToString("F3") + " seconds!");
-			}
-			return _localizationManager;
-		}
+                await _client.LoginAsync(TokenType.Bot, File.ReadAllText(Utils.GetProcessPathDir() + "\\Files\\Tokens\\" + TOKEN));
+                if (_commandHandler != null) await _commandHandler.SetupAsync();
+                await _client.StartAsync();
 
-		public static DiscordSocketClient GetClient() {
-			if (_client != null) {
-				return _client;
-			} else {
-				Logging.LogException(new InvalidOperationException("Attempted to access client when it was null!"), "Please wait for the bot to initialize before calling this method.");
-				_ = Shutdown(-1);
-				return new DiscordSocketClient();
-			}
-		}
+                if (_shutdownTask != null) await _shutdownTask.Task;
+                await Shutdown();
+            }
 
-	}
+        }
+
+        public static TimeSpan GetUptime() {
+            return DateTime.Now.Subtract(_startTime);
+        }
+
+        public static Process GetBotMainProcess() {
+            return _process;
+        }
+
+        public static Task TimeToClose() {
+            if (_shutdownTask != null) _shutdownTask.SetResult(true);
+            return Task.CompletedTask;
+        }
+
+        private static async Task Shutdown(int code = 0) {
+            Logging.Info("Beginning shutdown sequence...");
+            IO.Linkables.Save();
+            if (_client != null) {
+                await _client.LogoutAsync();
+                Logging.Info("Logged out of discord.");
+            } else {
+                Logging.Verbose("Client is null so no need to log out.");
+            }
+            Logging.Info("Shutting Down...");
+            Permissions.Permissions.Save();
+            if (_client != null) {
+                await _client.StopAsync();
+                Logging.Info("Successfully stopped client!");
+            } else {
+                Logging.Info("Client is null so no need to stop.");
+            }
+            Logging.Info("Successfully shut down!");
+            Environment.Exit(code);
+        }
+
+        private async Task BotReady() {
+            var start = DateTime.Now;
+            await _commandHandler.InitGlobalSlashCommands(_client);
+
+            foreach (IGuild guild in _client.Guilds) {
+                ulong guildId = guild.Id;
+                string guildName = guild.Name;
+                Logging.Verbose("========================================================");
+                Logging.Info("Setting up guild " + guildId + " (" + guildName + ")...");
+                string guildFilePath = Utils.GetProcessPathDir() + "\\Files\\Guilds\\" + guildId;
+
+                Logging.Verbose("========================================================");
+                Logging.Verbose("Asserting guild directory...");
+                IO.IOUtilities.AssertDirectoryExists(guildFilePath);
+
+                Logging.Verbose("========================================================");
+                Logging.Verbose("Asserting guild name file...");
+                IO.IOUtilities.AssertFileExists(guildFilePath, "." + guildName);
+
+                Logging.Verbose("========================================================");
+                Logging.Verbose("Asserting guild image directory...");
+                IO.IOUtilities.AssertDirectoryExists(guildFilePath + "\\Linkables\\Images");
+
+                Logging.Verbose("========================================================");
+                Logging.Verbose("Asserting guild audio directory...");
+                IO.IOUtilities.AssertDirectoryExists(guildFilePath + "\\Linkables\\Audio");
+
+                Logging.Verbose("========================================================");
+                Logging.Verbose("Asserting guild TTS file...");
+                IO.IOUtilities.AssertFileExists(guildFilePath, "TTS.txt");
+
+                Logging.Verbose("========================================================");
+                Logging.Verbose("Asserting guild localization selection file...");
+                IO.IOUtilities.AssertFileExists(guildFilePath, "selected_locale.bs");
+                string[] contents = File.ReadAllLines(guildFilePath + "\\selected_locale.bs");
+                if (contents.Length == 0) {
+                    Logging.Warning("Localization file for " + guildName + " (" + guildId + ") is empty! Defaulting to en_US");
+                    contents = new string[] { "en_US" };
+                    File.WriteAllText(guildFilePath + "\\selected_locale.bs", contents[0]);
+                }
+                Logging.Verbose("========================================================");
+
+
+            }
+            Logging.Verbose("========================================================");
+            Logging.Verbose("Asserting permissions initialization...");
+            Permissions.Permissions.Initialize();
+            Logging.Verbose("========================================================");
+            Logging.Verbose("Asserting Linkables initialization...");
+            IO.Linkables.Initialize();
+            Logging.Verbose("========================================================");
+
+            var end = DateTime.Now;
+            var diff = end.Subtract(start);
+            Logging.Info($"Initialization sequence complete in {diff.TotalSeconds} seconds!");
+
+            foreach (string s in Utils.GetASCIILogo()) {
+                Logging.Info(s);
+            }
+            return;
+        }
+
+        public static LocalizationManager GetLocalizationManager(DiscordSocketClient client) {
+            if (_localizationManager == null) {
+                Logging.Info("Initializing LocalizationManager...");
+                long start = DateTime.Now.Ticks;
+                _localizationManager = new LocalizationManager(client);
+                long end = DateTime.Now.Ticks;
+                long duration = end - start;
+                duration /= System.TimeSpan.TicksPerSecond;
+                Logging.Warning("Finished initializing localization in " + duration.ToString("F3") + " seconds!");
+            }
+            return _localizationManager;
+        }
+
+        public static DiscordSocketClient GetClient() {
+            return _client;
+        }
+
+    }
 
 }

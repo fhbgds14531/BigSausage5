@@ -353,3 +353,4 @@ MigrationBackup/
 /libopus.dll
 /libsodium.dll
 /vnext_natives_win32_x64.zip
+packages/
